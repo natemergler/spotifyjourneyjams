@@ -55,7 +55,7 @@ def find_similar_artists(sp, artist_id, target_duration_seconds):
         if j not in indices_for_search:
             indices_for_search.append(j)
             similar_search_term = artist_dictionary[j]["id"]
-    print("Found list of artists")
+    print("Found list of similar artists")
     return artist_dictionary
     
 
@@ -85,7 +85,7 @@ def select_songs_for_playlist(target_duration_seconds, list_o_songs):
             current_duration += song_duration_seconds
             songs_to_select_from.remove(random_song)  # Remove the selected song from the list to avoid duplicates
 
-    print("selected songs for playlist")
+    print("Selecting Songs for Playlist")
     return selected_songs
 
 def create_and_fill_playlist(sp, user_id, playlist_name, playlist_description, selected_songs):
@@ -94,7 +94,7 @@ def create_and_fill_playlist(sp, user_id, playlist_name, playlist_description, s
     
     # create playlist
     playlist = sp.user_playlist_create(user_id, playlist_name, public=False, collaborative=False, description=playlist_description)
-    print("Created Playlist")
+    print("Creating Playlist")
     playlist_uri = playlist['uri']
     # Define the chunk size
     chunk_size = 50
@@ -112,10 +112,10 @@ def create_and_fill_playlist(sp, user_id, playlist_name, playlist_description, s
         sp.playlist_add_items(playlist_uri, chunk_uris)
 
 
-    print("Added songs to playlist")
+    print("Adding Songs to Playlist")
     playlist_details = sp.playlist(playlist_uri)
     images = playlist_details['images']
-    url = playlist_details['external_url']
+    url = playlist_details['external_urls']['spotify']
     if url:
         return url
     else:
@@ -225,15 +225,17 @@ def main():
     
     route_duration = "Directions Failed, Please Re-input."
     # Test inputs
-    artist_input = input("Pick an artist for inspiration: \n")
                          
 
     while route_duration == "Directions Failed, Please Re-input.":
+
+        artist_input = input("Pick an artist for inspiration: ")
+
         address1 = input("Please enter your origin: ")
         address2 = input("Please enter your destination: ")
 
         addresses = [address1, address2]
-
+        print(" ")
         address_full1, coordinate1 = geocode(address1, access_token)
         print("Origin:", address_full1)
         
@@ -241,7 +243,7 @@ def main():
         print("Destination:", address_full2)
 
         route_duration, route_distance = DrivingTraffic(coordinate1, coordinate2, access_token)
-
+        print(" ")
         # Search for the first artist and verify
         main_artist = get_artist_info(sp, artist_input)
         main_artist_id = main_artist["id"]
@@ -249,7 +251,7 @@ def main():
         verify_songs = sp.artist_top_tracks(main_artist_id, country='US')
         
         print_artist_info(main_artist, verify_songs)
-
+        print(" ")
         prompt = input("Do these addresses and artists look right? y/n \n")
 
         if route_duration == "Directions Failed, Please Re-input.":
@@ -280,8 +282,8 @@ def main():
     route_distance = meters_to_miles(meters)
 
     route_distance = round(route_distance, 1)
-
-    print(route_duration, route_distance, "Miles")    
+    print(" ")
+    print(route_duration, ",", route_distance, "Miles")    
     target_duration_seconds = time_input
     
 
@@ -309,8 +311,9 @@ def main():
     playlist_description = "Made with love on Spotify Journey Jams"
     
     playlist_url = create_and_fill_playlist(sp, user_id, playlist_name, playlist_description, selected_songs)
-
+    print(" ")
     print("Your road ready playlist has been made and is available on your spotify account or at this link below \n", playlist_url)
+    print(" ")
 
 if __name__ == "__main__":
     main()
