@@ -225,8 +225,8 @@ def main():
     
     route_duration = "Directions Failed, Please Re-input."
     # Test inputs
-                         
-
+    print(" ")                     
+    print("Welcome to Spotify Journey Jams! \n This application will build the perfect length playlist for your road trip.\n Just enter two points and an artist to get the Spotify algorithm started! \n")
     while route_duration == "Directions Failed, Please Re-input.":
 
         artist_input = input("Pick an artist for inspiration: ")
@@ -252,8 +252,8 @@ def main():
         
         print_artist_info(main_artist, verify_songs)
         print(" ")
-        prompt = input("Do these addresses and artists look right? y/n \n")
-
+        prompt = input("Do these addresses and artists look right? y/n \n \n")
+        print(" ")
         if route_duration == "Directions Failed, Please Re-input.":
             print("No Driving Directions Available, Please Re-input.")
         else:
@@ -282,7 +282,6 @@ def main():
     route_distance = meters_to_miles(meters)
 
     route_distance = round(route_distance, 1)
-    print(" ")
     print(route_duration, ",", route_distance, "Miles")    
     target_duration_seconds = time_input
     
