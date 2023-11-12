@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Spotify Journey Jams</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<div class="container">
+  <h1>Spotify Journey Jams</h1>
+
+  <form id="inputs" action="/submit" method="GET">
+    <div class="input-container">
+        <label for="startingPoint">Starting Point:</label>
+        <input type="text" id="startingPoint" name="startingPoint" placeholder="Enter Starting Point">
+    </div>
+    
+    <div class="input-container">
+        <label for="destination">Destination:</label>
+        <input type="text" id="destination" name="destination" placeholder="Enter Destination">
+    </div>
+    
+    <div class="input-container">
+        <label for="artist">Artist:</label>
+        <input type="text" id="artist" name="artist" placeholder="Enter Artist">
+    </div>
+    
+    <button class="spotify" type="submit">Submit</button>
+</form>
+
+</div>
+
+</body>
+</html>
