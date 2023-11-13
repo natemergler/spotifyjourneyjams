@@ -128,6 +128,14 @@ h2 {
   text-transform: uppercase;
 }
 
+h3 {
+  font-size: 2rem;
+  font-weight: bold;
+  margin-bottom: 1rem;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+}
+
 p {
   font-size: 1.5rem;
   font-weight: bold;
@@ -216,6 +224,47 @@ button:focus {
 .summary__button:hover {
   opacity: 0.8;
 }
+
+.results {
+  background-color: #f5f5dc; /* Light cream-colored background */
+  border-radius: 15px; /* Adjust the border-radius as needed */
+  padding: 20px; /* Add padding for spacing within the rectangle */
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.1); /* Optional: Add a subtle box shadow */
+}
+
+/* Add more specific styles for elements within the "results" div if needed */
+.results h2 {
+  color: #333; /* Text color for headings */
+}
+
+/* Add these styles to your styles.css file */
+
+#image1 {
+  animation: moveUpDown 2s infinite alternate; /* Move up and down */
+}
+
+#image2 {
+  animation: spin 2s linear infinite; /* Spin continuously */
+}
+
+@keyframes moveUpDown {
+  0% {
+      transform: translateY(0);
+  }
+  100% {
+      transform: translateY(-20px); /* Adjust the distance as needed */
+  }
+}
+
+@keyframes spin {
+  0% {
+      transform: rotate(0deg);
+  }
+  100% {
+      transform: rotate(360deg);
+  }
+}
+
 
 /* Media Queries */
 @media (max-width: 480px) {

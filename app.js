@@ -29,9 +29,9 @@ app.use(
 
 // Route for the root URL
 app.get("/", (req, res) => {
-    res.sendFile(path.join(__dirname, "public", "index.html"));
-  });
-  
+  res.sendFile(path.join(__dirname, "public", "index.html"));
+});
+
 //Server side constants used
 const port = 3000;
 const clientId = process.env.CLIENTID;
@@ -39,13 +39,13 @@ const clientSecret = process.env.CLIENTSECRET;
 
 const redirectUri = process.env.REDIRECTURI; // Change this if needed
 
-const MAPBOX_ACCESS_TOKEN = process.env.MAPBOX_ACCESS_TOKEN
+const MAPBOX_ACCESS_TOKEN = process.env.MAPBOX_ACCESS_TOKEN;
 
 // Set up Spotify API credentials
 const spotifyApi = new SpotifyWebApi({
-clientId: clientId,
-clientSecret: clientSecret,
-redirectUri: redirectUri,
+  clientId: clientId,
+  clientSecret: clientSecret,
+  redirectUri: redirectUri,
 });
 
 function geocode(address, access_token) {
@@ -54,13 +54,13 @@ function geocode(address, access_token) {
   const url = `${endpoint}${address}.json?access_token=${access_token}`;
 
   return fetch(url)
-    .then(response => {
+    .then((response) => {
       if (!response.ok) {
         throw new Error(`HTTP error! Status: ${response.status}`);
       }
       return response.json();
     })
-    .then(data => {
+    .then((data) => {
       if (data.features && data.features.length > 0) {
         const feature = data.features[0];
         const coordinates = feature.center;
@@ -71,42 +71,82 @@ function geocode(address, access_token) {
         throw new Error(`Geocoding failed for: ${address}`);
       }
     })
-    .catch(error => {
+    .catch((error) => {
       throw new Error(`Error in geocoding: ${error.message}`);
     });
 }
 
+async function drivingTraffic(coordinate1, coordinate2, accessToken) {
+  const endpoint =
+    "https://api.mapbox.com/directions/v5/mapbox/driving-traffic/";
+
+  const params = {
+    access_token: accessToken,
+    annotations: "distance,duration",
+    origin: `${coordinate1[0]}, ${coordinate1[1]}`,
+    destination: `${coordinate2[0]}, ${coordinate2[1]}`,
+  };
+
+  try {
+    const response = await fetch(
+      `${endpoint}${params.origin};${params.destination}?access_token=${params.access_token}`
+    );
+    const data = await response.json();
+
+    if (response.status === 200) {
+      const route = data.routes[0]; // Assuming you want data from the first route
+      const duration = route.duration;
+      const distance = route.distance;
+
+      const routeDuration = `Duration: ${duration} seconds`;
+      const routeDistance = `Distance: ${distance} meters`;
+
+      return { duration, distance, routeDuration, routeDistance };
+    } else {
+      return {
+        errorMessage: `Directions Failed, Please Re-input. API request failed with status code: ${response.status}`,
+      };
+    }
+  } catch (error) {
+    return {
+      errorMessage: `An error occurred: ${error.message}`,
+    };
+  }
+}
 
 async function getArtistInfo(spotifyApi, artistInput) {
   try {
-      const results = await spotifyApi.searchArtists(artistInput);
-      const mainArtist = results.body.artists.items[0];
-      return mainArtist.id;
+    const results = await spotifyApi.searchArtists(artistInput);
+    const mainArtist = results.body.artists.items[0];
+    return mainArtist;
   } catch (error) {
-      throw new Error(`Error getting artist info: ${error.message}`);
+    throw new Error(`Error getting artist info: ${error.message}`);
   }
 }
 
 async function topTracks(spotifyApi, artistCode) {
   try {
-      const country = 'US'; // Replace with the desired country code
+    const country = "US"; // Replace with the desired country code
 
-      // Get the top tracks for the specified artist in the specified country
-      const response = await spotifyApi.getArtistTopTracks(artistCode, country);
-      const topTracksData = response.body.tracks;
+    // Get the top tracks for the specified artist in the specified country
+    const response = await spotifyApi.getArtistTopTracks(artistCode, country);
+    const topTracksData = response.body.tracks;
 
-        // Return a list of dictionaries with uri and name
-        const trackList = topTracksData.map(track => ({
-          uri: track.uri,
-          name: track.name,
-      }));
+    // Return a list of dictionaries with uri and name
+    const trackList = topTracksData.map((track) => ({
+      uri: track.id,
+      name: track.name,
+      duration_ms: track.duration_ms,
+      artist: track.artists[0].name,
+    }));
 
-      return trackList;
+    return trackList;
   } catch (error) {
-      throw new Error(`Error getting top tracks for ${artistCode}: ${error.message}`);
+    throw new Error(
+      `Error getting top tracks for ${artistCode}: ${error.message}`
+    );
   }
 }
-
 
 // Route for the root URL
 app.get("/spotify", (req, res) => {
@@ -125,67 +165,115 @@ app.get("/login", (req, res) => {
   }
 });
 
-
 // Handle Spotify API callback
 app.get("/callback", async (req, res) => {
-    const { code } = req.query;
-    try {
-      const data = await spotifyApi.authorizationCodeGrant(code);
-      const { access_token, refresh_token } = data.body;
-  
-      // Set the access token and refresh token on the Spotify API object
-      spotifyApi.setAccessToken(access_token);
-      spotifyApi.setRefreshToken(refresh_token);
-  
-      res.sendFile(path.join(__dirname, "public", "form.html"));
-    } catch (error) {
-      console.error("Error authenticating with Spotify:", error);
-      res.status(500).send("Error authenticating with Spotify");
-    }
-  });
+  const { code } = req.query;
+  try {
+    const data = await spotifyApi.authorizationCodeGrant(code);
+    const { access_token, refresh_token } = data.body;
 
-  app.post("/submit", async (req, res) => {
-    console.log("GOTTEM");
-    const startingPoint = req.body.startingPoint;
-    const destination = req.body.destination;
-    const artist = req.body.artist;
-  
-    try {
-      // Geocode and store data in the session
-      req.session.startingPointData = await geocode(startingPoint, MAPBOX_ACCESS_TOKEN);
-      req.session.destinationData = await geocode(destination, MAPBOX_ACCESS_TOKEN);
-  
-      // Fetch additional data (if needed)
-      const startingArtist = await getArtistInfo(spotifyApi, artist);
-      const testSongs = await topTracks(spotifyApi, startingArtist);
-  
-      // Store additional data in the session
-      req.session.startingArtist = startingArtist;
-      req.session.testSongs = testSongs;
-  
-      // Log the data
-      console.log("Starting Point:", req.session.startingPointData);
-      console.log("Destination:", req.session.destinationData);
-      console.log("Artist:", artist);
-      console.log("Test Songs: ", req.session.testSongs);
+    // Set the access token and refresh token on the Spotify API object
+    spotifyApi.setAccessToken(access_token);
+    spotifyApi.setRefreshToken(refresh_token);
+    res.redirect("/form");
+  } catch (error) {
+    console.error("Error authenticating with Spotify:", error);
+    res.status(500).send("Error authenticating with Spotify");
+  }
+});
 
-      // Render the EJS template with data
-      res.render("result", {
+app.get("/form", (req, res) => {
+  res.sendFile(path.join(__dirname, "public", "form.html"));
+});
+
+app.post("/submit", async (req, res) => {
+  console.log("GOTTEM");
+  const startingPoint = req.body.startingPoint;
+  const destination = req.body.destination;
+  const artist = req.body.artist;
+
+  try {
+    // Geocode and store data in the session
+    req.session.startingPointData = await geocode(
+      startingPoint,
+      MAPBOX_ACCESS_TOKEN
+    );
+    req.session.destinationData = await geocode(
+      destination,
+      MAPBOX_ACCESS_TOKEN
+    );
+
+    // Fetch additional data (if needed)
+    const startingArtist = await getArtistInfo(spotifyApi, artist);
+    const songs = await topTracks(spotifyApi, startingArtist.id);
+
+    // Store additional data in the session
+    req.session.startingArtist = startingArtist;
+    req.session.songs = songs;
+
+    // Log the data
+    console.log("Starting Point:", req.session.startingPointData);
+    console.log("Destination:", req.session.destinationData);
+    console.log("Artist:", artist);
+    console.log("Test Songs: ", req.session.songs);
+
+    // Render the EJS template with data
+    res.render("result", {
       startingPoint: req.session.startingPointData,
       destination: req.session.destinationData,
-      artist: artist,
-      testSongs: req.session.testSongs,
-  });
-    } catch (error) {
-      // Handle errors, log, or send an error response
-      console.error(error.message);
-      res.status(500).send("Error processing the request");
+      artist: req.session.startingArtist.name,
+      testSongs: req.session.songs,
+    });
+  } catch (error) {
+    // Handle errors, log, or send an error response
+    console.error(error.message);
+    res.status(500).send("Error processing the request");
+  }
+});
+
+app.get("/loading", async (req, res) => {
+  try {
+    // Render the "loading" view immediately
+    res.render("loading");
+  } catch (error) {
+    console.error("Error during loading:", error);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+});
+
+app.get("/work", async (req, res) => {
+  try {
+    // Ensure that startingPointData and destinationData are available in the session
+    if (!req.session.startingPointData || !req.session.destinationData) {
+      console.error("Starting point or destination data not available");
+      res
+        .status(400)
+        .json({ error: "Starting point or destination data not available" });
+      return;
     }
-  });
-  
 
+    // Get driving traffic information
+    const { duration, distance, routeDuration, routeDistance, errorMessage } =
+      await drivingTraffic(
+        req.session.startingPointData.coordinates,
+        req.session.destinationData.coordinates,
+        MAPBOX_ACCESS_TOKEN
+      );
 
-  // Start the server
+    if (errorMessage) {
+      console.error(errorMessage);
+      res.status(500).json({ error: "Error processing the request" });
+      return;
+    }
+    console.log(routeDistance + " " + routeDuration)
+
+  } catch (error) {
+    console.error("Error during distance calculation:", error);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+});
+
+// Start the server
 app.listen(port, () => {
   console.log(`Server listening on port ${port}`);
 });

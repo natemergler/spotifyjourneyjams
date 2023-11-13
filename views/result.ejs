@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8">
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
@@ -8,26 +9,53 @@
   <!-- Link to your external CSS file -->
   <link rel="stylesheet" href="styles.css">
 </head>
+
 <body>
   <div class="container">
-    <h1>Result Page</h1>
 
-    <div class="input-container">
-      <label>Starting Point:</label>
-      <pre><%= JSON.stringify(startingPoint, null, 2) %></pre>
+    <div class="results">
+      <section id="locations">
+        <h2>Is your locations correct?</h2>
+        <h3>Starting Point</h3>
+        <label>Address:</label>
+        <p><%= startingPoint.addressFull %></p>
 
-      <label>Destination:</label>
-      <pre><%= JSON.stringify(destination, null, 2) %></pre>
+        <h3>Destination</h3>
+        <label>Address:</label>
+        <p><%= destination.addressFull %></p>
+        <a href="/form"><button>No</button></a>
+        <button onclick="showSection('artistSection')">Yes!</button>
+      </section>
 
-      <label>Artist:</label>
-      <pre><%= artist %></pre>
+      <section id="artistSection" style="display: none;">
+        <h2>Is this the artist you wanted?</h2>
+        <h3>Artist</h3>
+        <label>Artist:</label>
+        <p><%= artist %></p>
+        <label>Who made songs like:</label>
+        <ul>
+          <% testSongs.forEach(song => { %>
+            <li><%= song.name %></li>
+          <% }); %>
+        </ul>
+        <a href="/form"><button>No</button></a>
+        <a href="/loading"><button>Yes!</button></a>
+      </section>
 
-      <label>Test Songs:</label>
-      <pre><%= JSON.stringify(testSongs, null, 2) %></pre>
     </div>
 
-    <!-- Add other content as needed -->
-
   </div>
+
+  <script>
+    function showSection(sectionId) {
+      // Hide all sections
+      document.getElementById('locations').style.display = 'none';
+      document.getElementById('artistSection').style.display = 'none';
+
+      // Show the selected section
+      document.getElementById(sectionId).style.display = 'block';
+    }
+  </script>
 </body>
+
 </html>
