@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Result Page</title>
+  <!-- Link to your external CSS file -->
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="container">
+    <h1>Result Page</h1>
+
+    <div class="input-container">
+      <label>Starting Point:</label>
+      <pre><%= JSON.stringify(startingPoint, null, 2) %></pre>
+
+      <label>Destination:</label>
+      <pre><%= JSON.stringify(destination, null, 2) %></pre>
+
+      <label>Artist:</label>
+      <pre><%= artist %></pre>
+
+      <label>Test Songs:</label>
+      <pre><%= JSON.stringify(testSongs, null, 2) %></pre>
+    </div>
+
+    <!-- Add other content as needed -->
+
+  </div>
+</body>
+</html>

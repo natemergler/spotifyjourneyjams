@@ -3,11 +3,29 @@ const SpotifyWebApi = require("spotify-web-api-node");
 const path = require("path");
 require("dotenv").config();
 const bodyParser = require("body-parser");
+const session = require("express-session");
+const cookieParser = require("cookie-parser");
 
 const app = express();
 // Serve static files from the 'public' directory
 app.use(express.static(path.join(__dirname, "public")));
 app.use(express.urlencoded({ extended: true }));
+
+// Set EJS as the view engine
+app.set("view engine", "ejs");
+
+// Set the views directory
+app.set("views", path.join(__dirname, "views"));
+
+app.use(cookieParser());
+
+app.use(
+  session({
+    secret: process.env.SESSIONKEY, // Replace with a secret key for session encryption
+    resave: false,
+    saveUninitialized: true,
+  })
+);
 
 // Route for the root URL
 app.get("/", (req, res) => {
@@ -127,51 +145,44 @@ app.get("/callback", async (req, res) => {
   });
 
   app.post("/submit", async (req, res) => {
-    console.log("GOTTEM")
+    console.log("GOTTEM");
     const startingPoint = req.body.startingPoint;
     const destination = req.body.destination;
     const artist = req.body.artist;
-
+  
     try {
-      var startingPointData = await geocode(startingPoint, MAPBOX_ACCESS_TOKEN);
-      var destinationData = await geocode(destination, MAPBOX_ACCESS_TOKEN);
-      
+      // Geocode and store data in the session
+      req.session.startingPointData = await geocode(startingPoint, MAPBOX_ACCESS_TOKEN);
+      req.session.destinationData = await geocode(destination, MAPBOX_ACCESS_TOKEN);
+  
+      // Fetch additional data (if needed)
+      const startingArtist = await getArtistInfo(spotifyApi, artist);
+      const testSongs = await topTracks(spotifyApi, startingArtist);
+  
+      // Store additional data in the session
+      req.session.startingArtist = startingArtist;
+      req.session.testSongs = testSongs;
+  
+      // Log the data
+      console.log("Starting Point:", req.session.startingPointData);
+      console.log("Destination:", req.session.destinationData);
+      console.log("Artist:", artist);
+      console.log("Test Songs: ", req.session.testSongs);
 
+      // Render the EJS template with data
+      res.render("result", {
+      startingPoint: req.session.startingPointData,
+      destination: req.session.destinationData,
+      artist: artist,
+      testSongs: req.session.testSongs,
+  });
     } catch (error) {
       // Handle errors, log, or send an error response
       console.error(error.message);
-      res.status(500).send("Error with geocoding");
+      res.status(500).send("Error processing the request");
     }
-
-    try {
-      var startingArtist = await getArtistInfo(spotifyApi, artist);
-      var testSongs = await topTracks(spotifyApi, startingArtist);
-    } catch (error) {
-      console.error(error)
-    }
-      // You can use startingPointData and destinationData in your route logic
-      console.log("Starting Point:", startingPointData);
-      console.log("Destination:", destinationData);
-      console.log("Artist:", artist);
-      console.log("Test Songs: ", testSongs);
-  
-      // Send a response with the data
-      res.json({
-        startingPoint: {
-          address: startingPoint,
-          coordinates: startingPointData.coordinates,
-          addressFull: startingPointData.addressFull,
-        },
-        destination: {
-          address: destination,
-          coordinates: destinationData.coordinates,
-          addressFull: destinationData.addressFull,
-        },
-        artist: artist,
-        testSongs: testSongs,
-      });
-
   });
+  
 
 
   // Start the server
