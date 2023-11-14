@@ -3,23 +3,21 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Results</title>
+    <title>Spotify Journey</title>
     <link rel="stylesheet" href="styles.css"> <!-- Link to your styles.css file -->
 </head>
-<body class="container">
-    <h1 class="results">Results</h1>
+<body class="container"> <!-- Added classes "container" and "page1" -->
+    <h2 class=" ">Starting Point</h2>
+    <p class=" ">Full Address: <%= startingPoint.addressFull %></p>
 
-    <h2 class="results">Starting Point</h2>
-    <p class="results">Full Address: <%= startingPoint.addressFull %></p>
+    <h2 class=" ">Destination</h2>
+    <p class=" ">Full Address: <%= destination.addressFull %></p>
 
-    <h2 class="results">Destination</h2>
-    <p class="results">Full Address: <%= destination.addressFull %></p>
+    <h2 class=" ">Artist</h2>
+    <p class=" ">Main Artist: <%= artist %></p>
 
-    <h2 class="results">Artist</h2>
-    <p class="results">Main Artist: <%= artist %></p>
-
-    <h2 class="results">Songs</h2>
-    <ul class="results">
+    <h2 class=" ">Songs</h2>
+    <ul class=" ">
         <% for (let i = 0; i < testSongs.length; i++) { %>
             <li>
                 <strong><%= testSongs[i].name %></strong> by <%= testSongs[i].artist %>
@@ -27,14 +25,14 @@
         <% } %>
     </ul>
 
-    <h2 class="results">Duration and Distance</h2>
-    <p class="results">Estimated Duration: <%= duration %></p>
-    <p class="results">Estimated Distance: <%= distance %> miles</p>
+    <h2 class=" ">Duration and Distance</h2>
+    <p class=" ">Estimated Duration: <%= duration %></p>
+    <p class=" ">Estimated Distance: <%= distance %> miles</p>
 
     <% if (playlist) { %>
-        <a href="<%= playlist.body.external_urls.spotify %>"><p class="results">Playlist created successfully!</p></a>
+        <a href="<%= playlist.body.external_urls.spotify %>"><p class=" ">Playlist created successfully!</p></a>
     <% } else { %>
-        <p class="results">Playlist creation failed. Please try again.</p>
+        <p class=" ">Playlist creation failed. Please try again.</p>
     <% } %>
 </body>
 </html>
