@@ -134,7 +134,7 @@ async function topTracks(spotifyApi, artistCode) {
 
     // Return a list of dictionaries with uri and name
     const trackList = topTracksData.map((track) => ({
-      id: track.id,
+      id: track.uri,
       name: track.name,
       duration_ms: track.duration_ms,
       artist: track.artists[0].name,
@@ -150,8 +150,8 @@ async function topTracks(spotifyApi, artistCode) {
 
 async function similarArtists(spotifyApi, artistCode) {
   try {
-    const response = await spotifyApi.getArtistRelatedArtists(artistCode)
-    const relatedArtists = response.body.artists
+    const response = await spotifyApi.getArtistRelatedArtists(artistCode);
+    const relatedArtists = response.body.artists;
 
     const artistList = relatedArtists.map((artist) => ({
       id: artist.id,
@@ -163,7 +163,7 @@ async function similarArtists(spotifyApi, artistCode) {
     return artistList;
   } catch (error) {
     throw new Error(
-    `Error getting top tracks for ${artistCode}: ${error.message}`
+      `Error getting top tracks for ${artistCode}: ${error.message}`
     );
   }
 }
@@ -174,7 +174,6 @@ function shuffleArray(array) {
     [array[i], array[j]] = [array[j], array[i]]; // Swap elements
   }
 }
-
 
 // Route for the root URL
 app.get("/spotify", (req, res) => {
@@ -287,14 +286,16 @@ app.get("/work", async (req, res) => {
         req.session.destinationData.coordinates,
         MAPBOX_ACCESS_TOKEN
       );
+    
+    req.session.duration = duration
+    req.session.distance = distance
 
     if (errorMessage) {
       console.error(errorMessage);
       res.status(500).json({ error: "Error processing the request" });
       return;
     }
-    console.log(routeDistance + " " + routeDuration)
-
+    console.log(routeDistance + " " + routeDuration);
   } catch (error) {
     console.error("Error during distance calculation:", error);
     res.status(500).json({ error: "Error during distance calculation" });
@@ -302,9 +303,9 @@ app.get("/work", async (req, res) => {
   try {
     // make list of artists
     let baseArtist = req.session.startingArtist.id;
-    var artistDictionary = [req.session.startingArtist]
-    const indicesForSearch = [0]
-    while (artistDictionary.length < Math.floor((duration / 60) / 30) * 2 + 6) {
+    var artistDictionary = [req.session.startingArtist];
+    const indicesForSearch = [0];
+    while (artistDictionary.length < Math.floor(duration / 60 / 30) * 2 + 6) {
       const similarArtistList = await similarArtists(spotifyApi, baseArtist);
       artistDictionary.push(...similarArtistList);
 
@@ -314,6 +315,7 @@ app.get("/work", async (req, res) => {
       } while (indicesForSearch.includes(j));
       indicesForSearch.push(j);
     }
+    req.session.artists = artistDictionary
   } catch (error) {
     console.error("Error making list of artists:", error);
     res.status(500).json({ error: "Error making list of artists" });
@@ -326,7 +328,7 @@ app.get("/work", async (req, res) => {
       artist = artistDictionary[i];
       const artistTopTracks = await topTracks(spotifyApi, artist.id);
 
-      songs.push(...artistTopTracks)
+      songs.push(...artistTopTracks);
     }
   } catch (error) {
     console.error("Error finding artists top tracks:", error);
@@ -341,14 +343,21 @@ app.get("/work", async (req, res) => {
   const overshootSeconds = 120;
 
   while (currentDuration < duration) {
-    var randomSong = songsToSelectFrom[Math.floor(Math.random()*songsToSelectFrom.length)]
-    songDuration = randomSong.duration_ms / 1000
+    var randomSong =
+      songsToSelectFrom[Math.floor(Math.random() * songsToSelectFrom.length)];
+    songDuration = randomSong.duration_ms / 1000;
 
     if (currentDuration + songDuration > duration + overshootSeconds) {
       if (selectedSongs.length > 0) {
-        replacingIndex = Math.floor(Math.random()*selectedSongs.length)
-        selectedSongs[replacingIndex] = songsToSelectFrom[Math.floor(Math.random()*songsToSelectFrom.length)]
-        currentDuration = selectedSongs.reduce((sum, song) => sum + song.duration_ms / 1000, 0);
+        replacingIndex = Math.floor(Math.random() * selectedSongs.length);
+        selectedSongs[replacingIndex] =
+          songsToSelectFrom[
+            Math.floor(Math.random() * songsToSelectFrom.length)
+          ];
+        currentDuration = selectedSongs.reduce(
+          (sum, song) => sum + song.duration_ms / 1000,
+          0
+        );
       }
     } else {
       selectedSongs.push(randomSong);
@@ -357,13 +366,106 @@ app.get("/work", async (req, res) => {
       if (indexOfRandomSong !== -1) {
         songsToSelectFrom.splice(indexOfRandomSong, 1);
       }
+    }
   }
-  }  
 
-  const songListName = selectedSongs.map(song => song.name);
-  res.json(songListName)
+  shuffleArray(selectedSongs);
+  req.session.songs = selectedSongs
+  var songIds = selectedSongs.map((song) => song.id);
 
+  try {
+    // Create playlist
+    const playlistName = "Road Trip!";
+    const playlistDescription = "Made with love on Spotify Journey";
 
+    // Get the current user's ID
+    const userId = await spotifyApi.getMe();
+
+    // Create the playlist
+    var roadTripPlaylist = await spotifyApi.createPlaylist(playlistName, {
+      public: false,
+      collaborative: false,
+      description: playlistDescription,
+    });
+
+    // Get the URI of the created playlist
+    var playlistUri = roadTripPlaylist.body.id;
+
+    req.session.playlist = roadTripPlaylist;
+
+    console.log("Creating Playlist");
+
+    console.log("Playlist URI:", playlistUri);
+
+    console.log("/n /n Song IDs:", songIds);
+
+    const chunkSize = 100;
+    const totalChunks = Math.ceil(songIds.length / chunkSize);
+
+    for (let i = 0; i < totalChunks; i++) {
+      const startIndex = i * chunkSize;
+      const endIndex = (i + 1) * chunkSize;
+      const chunkSongIds = songIds.slice(startIndex, endIndex);
+
+      try {
+        // Add songs to the playlist
+        const response = await spotifyApi.addTracksToPlaylist(
+          playlistUri,
+          chunkSongIds
+        );
+
+        console.log(`Added chunk ${i + 1} of ${totalChunks} to the playlist`);
+      } catch (error) {
+        console.error(
+          `Error adding chunk ${i + 1} to the playlist:`,
+          error.message
+        );
+        // Handle the error as needed
+      }
+    }
+  } catch (error) {
+    console.error("Error creating playlist:", error.message);
+    // Handle the error as needed
+  }
+  res.redirect("/playlist")
+});
+
+// Route for displaying results
+app.get("/playlist", (req, res) => {
+  const duration = req.session.duration;
+  const distance = req.session.distance
+
+  const hours = Math.floor(duration / 3600);
+  const minutes = Math.floor((duration % 3600) / 60);
+  
+  let time;
+  
+  if (hours < 1) {
+    time = minutes + " minutes";
+  } else {
+    time = hours + " hours and " + minutes + " minutes";
+  }
+
+  const conversionFactor = 0.000621371;
+  const miles = distance * conversionFactor;
+  const AMERICA =  Math.round(miles * 10) / 10;
+
+  try {
+    // Render the EJS template with data
+    res.render("playlist", {
+      startingPoint: req.session.startingPointData,
+      destination: req.session.destinationData,
+      artist: req.session.startingArtist.name,
+      testSongs: req.session.songs,
+      playlist: req.session.playlist,
+      duration: time,
+      distance: AMERICA, // Make sure to pass the playlist data
+    });
+  } catch (error) {
+    // Handle errors, log, or send an error response
+    console.error(error.message);
+    res.status(500).send("Error processing the request");
+  }
 });
 
 // Start the server

@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Results</title>
+</head>
+<body>
+    <h1>Results</h1>
+
+    <h2>Starting Point</h2>
+    <p>Full Address: <%= startingPoint.addressFull %></p>
+
+    <h2>Destination</h2>
+    <p>Full Address: <%= destination.addressFull %></p>
+
+    <h2>Artist</h2>
+    <p>Main Artist: <%= artist %></p>
+
+    <h2>Songs</h2>
+    <ul>
+        <% for (let i = 0; i < testSongs.length; i++) { %>
+            <li>
+                <strong><%= testSongs[i].name %></strong> by <%= testSongs[i].artist %>
+            </li>
+        <% } %>
+    </ul>
+
+    <h2>Duration and Distance</h2>
+    <p>Estimated Duration: <%= duration %></p>
+    <p>Estimated Distance: <%= distance %> miles</p>
+
+    <h2>Playlist</h2>
+    <% if (playlist) { %>
+        <p>Playlist created successfully!</p>
+        <p>Playlist Name: <%= playlist.body.name %></p>
+        <p>Playlist Description: <%= playlist.body.description %></p>
+        <a href=<%= playlist.body.external_urls.spotify %>>Playlist URI: <%= playlist.body.external_urls.spotify %></a>
+    <% } else { %>
+        <p>Playlist creation failed. Please try again.</p>
+    <% } %>
+</body>
+</html>
