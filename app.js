@@ -270,6 +270,16 @@ app.get("/loading", async (req, res) => {
   }
 });
 
+app.get("/loadingtest", async (req, res) => {
+  try {
+    // Render the "loading" view immediately
+    res.render("loadingtest");
+  } catch (error) {
+    console.error("Error during loading:", error);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+});
+
 app.get("/work", async (req, res) => {
   try {
     // Ensure that startingPointData and destinationData are available in the session

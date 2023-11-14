@@ -22,6 +22,14 @@ body.page2 {
   background-position: center;
 }
 
+body.page3 {
+  background-image: url('/static/emptybackground.png'); 
+  background-repeat: no-repeat;
+  background-position: center;
+  overflow: hidden; /* Hide content beyond the viewport */
+
+}
+
 h1 {
   font-size: 56px;
 }
@@ -38,7 +46,7 @@ h3 {
   text-align: center;
   padding: 20px;
   border-radius: 10px;
-  width: 50%;
+  width: 700px;
 }
 
 .input-container {
@@ -116,19 +124,30 @@ button {
 .artist-details {
   display: flex;
   justify-content: center;
-  align-items: flex-start;
+  align-items: flex-start; /* Align items to the start of the cross axis (top) */
   flex-wrap: wrap;
+  padding-bottom: 10px;
 }
 
 .mainartistimage {
-  max-width: 150px; /* Adjust the maximum width as needed */
-  border-radius: 50%; /* Circular crop */
-  border: 3px solid #333; /* Border color */
-  margin-right: 20px; /* Spacing between image and text */
+  flex: 0 0 auto; /* Do not grow or shrink, maintain initial size */
 }
 
+#artistimage {
+  width: 150px;
+  height: 150px;
+  border-radius: 50%;
+  border: 3px solid #333;
+  margin-right: 20px;
+  object-fit: cover; /* Ensure the entire image fits within the circle */
+  object-position: center center; /* Center the image within the circle */
+  overflow: hidden; /* Hide anything outside the circle */
+}
+
+
 .song-names {
-  text-align: left; /* Align the song names to the left */
+  text-align: right;
+  flex: 1 1 auto; /* Grow and shrink equally, take remaining space */
 }
 
 .song-names h3 {
@@ -139,6 +158,64 @@ button {
   margin-bottom: 10px;
 }
 
-.results {
-font-size: 18px;
-text-align: center;}
+.loading-images {
+  position: relative;
+  margin-top: 100%;
+}
+
+#image1 {
+  position: relative;
+  animation: bounce .7s infinite alternate;
+  z-index: 2; /* Set a higher z-index for the van image */
+  left: 10%; /* Move the van image to the right */
+  width: 50%; /* Adjust the width of the van */
+  height: auto; /* Maintain aspect ratio */
+}
+
+@keyframes bounce {
+  0% {
+      transform: translateY(0);
+  }
+  100% {
+      transform: translateY(50px); /* Adjust the final position as needed */
+  }
+}
+
+#image2 {
+  position: relative;
+  z-index: 1; /* Set a lower z-index for the globe image */
+  height: auto; /* Maintain aspect ratio */
+  left: 48%; /* Center the globe image horizontally */
+  transform: translateX(-50%) rotate(360deg); /* Center and add rotation */
+  animation: spin 7s linear infinite; /* Add the spin animation */
+}
+
+@keyframes spin {
+  0% {
+      transform: translateX(-50%) rotate(0deg);
+  }
+  100% {
+      transform: translateX(-50%) rotate(360deg);
+  }
+}
+
+#whitetext {
+  color:#fff
+}
+
+
+.logo-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: 20px; /* Adjust the spacing between logos */
+}
+
+#spotifylogo {
+  width: 100px;
+  margin-bottom: 10px; /* Adjust the spacing between logos */
+}
+
+#journeyjamslogo {
+  width: 400px;
+}
