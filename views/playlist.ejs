@@ -2,37 +2,78 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Spotify Journey</title>
     <link rel="stylesheet" href="styles.css">
+    <script src="https://open.spotify.com/embed/iframe-api/v1" async></script>
 </head>
-<body class="container"> <!-- Added classes "container" and "page1" -->
-    <h2 class=" ">Starting Point</h2>
-    <p class=" ">Full Address: <%= startingPoint.addressFull %></p>
+<body class="page3"> 
+    <div class="container playlistcontainer">
+        <div class="playlistdata">
+            <div class="logo-container">
+                <img id='spotifylogo' src="static/spotifylogo.png">
+                <img id='journeyjamslogo' src="static/spotifyjourneyjamslogo.png">
+            </div>
+            <h2 class="purple" id="duration"></h2>
+            <h3 class="purple" id="distance"></h3>
+            <h3 id="orange">Includes:</h3>
+            <div id="artistnames" class="purple">
 
-    <h2 class=" ">Destination</h2>
-    <p class=" ">Full Address: <%= destination.addressFull %></p>
+            </div>
+        </div>
+        <div class="playlistembed">
+            <div id="embed-iframe"></div>
+        </div>
+    </div>
 
-    <h2 class=" ">Artist</h2>
-    <p class=" ">Main Artist: <%= artist %></p>
+    <script>
+        window.onSpotifyIframeApiReady = (IFrameAPI) => {};
 
-    <h2 class=" ">Songs</h2>
-    <ul class=" ">
-        <% for (let i = 0; i < testSongs.length; i++) { %>
-            <li>
-                <strong><%= testSongs[i].name %></strong> by <%= testSongs[i].artist %>
-            </li>
-        <% } %>
-    </ul>
+        var songs = <%- JSON.stringify(songs) %>;
 
-    <h2 class=" ">Duration and Distance</h2>
-    <p class=" ">Estimated Duration: <%= duration %></p>
-    <p class=" ">Estimated Distance: <%= distance %> miles</p>
+        // Perform calculations on the client side
+        var duration = <%= duration %>;
+        var distance = <%= distance %>;
 
-    <% if (playlist) { %>
-        <a href="<%= playlist.body.external_urls.spotify %>"><p class=" ">Playlist created successfully!</p></a>
-    <% } else { %>
-        <p class=" ">Playlist creation failed. Please try again.</p>
-    <% } %>
+        const hours = Math.floor(duration / 3600);
+        const minutes = Math.floor((duration % 3600) / 60);
+
+        let time;
+
+        if (hours < 1) {
+            time = minutes + " minutes";
+        } else {
+            time = hours + " hours and " + minutes + " minutes";
+        }
+
+        const conversionFactor = 0.000621371;
+        const miles = distance * conversionFactor;
+        const AMERICA = Math.round(miles * 10) / 10;
+
+        // Display the calculated values and examples in the HTML
+        document.getElementById('duration').textContent = time;
+        document.getElementById('distance').textContent = AMERICA + " miles";
+
+        // Parse the songs array
+
+        // Display the first three artist names in the 'artistnames' div
+        var artistNamesDiv = document.getElementById('artistnames');
+        for (let i = 0; i < Math.min(songs.length, 3); i++) {
+            var pElement = document.createElement("p");
+            pElement.textContent = songs[i].artist;
+            artistNamesDiv.appendChild(pElement);
+        }
+
+        var playlist = <%- JSON.stringify(playlist) %>;
+        var playlistUri = playlist.body.uri;
+        window.onSpotifyIframeApiReady = (IFrameAPI) => {
+            const element = document.getElementById('embed-iframe');
+            const options = {
+                uri: playlistUri,
+                height: 450
+                };
+            const callback = (EmbedController) => {};
+            IFrameAPI.createController(element, options, callback);
+        };
+    </script>
 </body>
 </html>

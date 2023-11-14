@@ -444,39 +444,43 @@ app.get("/work", async (req, res) => {
 
 // Route for displaying results
 app.get("/playlist", (req, res) => {
-  const duration = req.session.duration;
-  const distance = req.session.distance
-
-  const hours = Math.floor(duration / 3600);
-  const minutes = Math.floor((duration % 3600) / 60);
-  
-  let time;
-  
-  if (hours < 1) {
-    time = minutes + " minutes";
-  } else {
-    time = hours + " hours and " + minutes + " minutes";
-  }
-
-  const conversionFactor = 0.000621371;
-  const miles = distance * conversionFactor;
-  const AMERICA =  Math.round(miles * 10) / 10;
 
   try {
     // Render the EJS template with data
     res.render("playlist", {
-      startingPoint: req.session.startingPointData,
-      destination: req.session.destinationData,
       artist: req.session.startingArtist.name,
-      testSongs: req.session.songs,
+      songs: req.session.songs,
       playlist: req.session.playlist,
-      duration: time,
-      distance: AMERICA, // Make sure to pass the playlist data
+      duration: req.session.duration,
+      distance: req.session.distance, // Make sure to pass the playlist data
     });
+
   } catch (error) {
     // Handle errors, log, or send an error response
     console.error(error.message);
     res.status(500).send("Error displaying results");
+  }
+});
+
+app.get("/playlistdebug", (req, res) => {
+  try {
+    const filePath = path.join(__dirname, 'test.json');
+    const debugsession = require(filePath);
+
+    res.render("playlist", {
+      startingPoint: debugsession.startingPointData,
+      destination: debugsession.destinationData,
+      artist: debugsession.startingArtist.name,
+      songs: debugsession.songs,
+      playlist: debugsession.playlist,
+      duration: debugsession.duration,
+      distance: debugsession.distance,
+    });
+  } catch (error) {
+    console.error('Error loading or parsing JSON file:', error);
+
+    // You can customize the response when an error occurs
+    res.status(500).send('Internal Server Error');
   }
 });
 
