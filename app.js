@@ -114,7 +114,7 @@ async function drivingTraffic(coordinate1, coordinate2, accessToken) {
   }
 }
 
-async function getArtistInfo(spotifyApi, artistInput) {
+async function searchArtist(spotifyApi, artistInput) {
   try {
     const results = await spotifyApi.searchArtists(artistInput);
     const mainArtist = results.body.artists.items[0];
@@ -134,7 +134,7 @@ async function topTracks(spotifyApi, artistCode) {
 
     // Return a list of dictionaries with uri and name
     const trackList = topTracksData.map((track) => ({
-      uri: track.id,
+      id: track.id,
       name: track.name,
       duration_ms: track.duration_ms,
       artist: track.artists[0].name,
@@ -147,6 +147,34 @@ async function topTracks(spotifyApi, artistCode) {
     );
   }
 }
+
+async function similarArtists(spotifyApi, artistCode) {
+  try {
+    const response = await spotifyApi.getArtistRelatedArtists(artistCode)
+    const relatedArtists = response.body.artists
+
+    const artistList = relatedArtists.map((artist) => ({
+      id: artist.id,
+      name: artist.name,
+      genres: artist.genres,
+      iamges: artist.images,
+    }));
+
+    return artistList;
+  } catch (error) {
+    throw new Error(
+    `Error getting top tracks for ${artistCode}: ${error.message}`
+    );
+  }
+}
+
+function shuffleArray(array) {
+  for (let i = array.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [array[i], array[j]] = [array[j], array[i]]; // Swap elements
+  }
+}
+
 
 // Route for the root URL
 app.get("/spotify", (req, res) => {
@@ -204,7 +232,7 @@ app.post("/submit", async (req, res) => {
     );
 
     // Fetch additional data (if needed)
-    const startingArtist = await getArtistInfo(spotifyApi, artist);
+    const startingArtist = await searchArtist(spotifyApi, artist);
     const songs = await topTracks(spotifyApi, startingArtist.id);
 
     // Store additional data in the session
@@ -253,7 +281,7 @@ app.get("/work", async (req, res) => {
     }
 
     // Get driving traffic information
-    const { duration, distance, routeDuration, routeDistance, errorMessage } =
+    var { duration, distance, routeDuration, routeDistance, errorMessage } =
       await drivingTraffic(
         req.session.startingPointData.coordinates,
         req.session.destinationData.coordinates,
@@ -269,8 +297,73 @@ app.get("/work", async (req, res) => {
 
   } catch (error) {
     console.error("Error during distance calculation:", error);
-    res.status(500).json({ error: "Internal Server Error" });
+    res.status(500).json({ error: "Error during distance calculation" });
   }
+  try {
+    // make list of artists
+    let baseArtist = req.session.startingArtist.id;
+    var artistDictionary = [req.session.startingArtist]
+    const indicesForSearch = [0]
+    while (artistDictionary.length < Math.floor((duration / 60) / 30) * 2 + 6) {
+      const similarArtistList = await similarArtists(spotifyApi, baseArtist);
+      artistDictionary.push(...similarArtistList);
+
+      let j;
+      do {
+        j = Math.floor(Math.random() * (artistDictionary.length - 1) + 1);
+      } while (indicesForSearch.includes(j));
+      indicesForSearch.push(j);
+    }
+  } catch (error) {
+    console.error("Error making list of artists:", error);
+    res.status(500).json({ error: "Error making list of artists" });
+  }
+
+  try {
+    var songs = req.session.songs;
+    //make list of songs
+    for (let i = 1; i < artistDictionary.length - 1; i++) {
+      artist = artistDictionary[i];
+      const artistTopTracks = await topTracks(spotifyApi, artist.id);
+
+      songs.push(...artistTopTracks)
+    }
+  } catch (error) {
+    console.error("Error finding artists top tracks:", error);
+    res.status(500).json({ error: "Error finding artists top tracks" });
+  }
+
+  //shuffle songs and prepare for playlist
+  const songsToSelectFrom = [...songs]; // Using the spread operator to create a shallow copy
+  shuffleArray(songsToSelectFrom); // Assuming shuffleArray is a function that shuffles the array
+  const selectedSongs = [];
+  var currentDuration = 0;
+  const overshootSeconds = 120;
+
+  while (currentDuration < duration) {
+    var randomSong = songsToSelectFrom[Math.floor(Math.random()*songsToSelectFrom.length)]
+    songDuration = randomSong.duration_ms / 1000
+
+    if (currentDuration + songDuration > duration + overshootSeconds) {
+      if (selectedSongs.length > 0) {
+        replacingIndex = Math.floor(Math.random()*selectedSongs.length)
+        selectedSongs[replacingIndex] = songsToSelectFrom[Math.floor(Math.random()*songsToSelectFrom.length)]
+        currentDuration = selectedSongs.reduce((sum, song) => sum + song.duration_ms / 1000, 0);
+      }
+    } else {
+      selectedSongs.push(randomSong);
+      currentDuration += songDuration;
+      const indexOfRandomSong = songsToSelectFrom.indexOf(randomSong);
+      if (indexOfRandomSong !== -1) {
+        songsToSelectFrom.splice(indexOfRandomSong, 1);
+      }
+  }
+  }  
+
+  const songListName = selectedSongs.map(song => song.name);
+  res.json(songListName)
+
+
 });
 
 // Start the server
