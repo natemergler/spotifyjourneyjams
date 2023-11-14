@@ -5,6 +5,7 @@ require("dotenv").config();
 const bodyParser = require("body-parser");
 const session = require("express-session");
 const cookieParser = require("cookie-parser");
+const fetch = require('node-fetch');
 
 const app = express();
 // Serve static files from the 'public' directory
@@ -157,7 +158,7 @@ async function similarArtists(spotifyApi, artistCode) {
       id: artist.id,
       name: artist.name,
       genres: artist.genres,
-      iamges: artist.images,
+      images: artist.images,
     }));
 
     return artistList;
@@ -250,11 +251,12 @@ app.post("/submit", async (req, res) => {
       destination: req.session.destinationData,
       artist: req.session.startingArtist.name,
       testSongs: req.session.songs,
+      artistImage: req.session.startingArtist.images[0].url
     });
   } catch (error) {
     // Handle errors, log, or send an error response
     console.error(error.message);
-    res.status(500).send("Error processing the request");
+    res.status(500).send("Error submitting request");
   }
 });
 
@@ -464,7 +466,7 @@ app.get("/playlist", (req, res) => {
   } catch (error) {
     // Handle errors, log, or send an error response
     console.error(error.message);
-    res.status(500).send("Error processing the request");
+    res.status(500).send("Error displaying results");
   }
 });
 
