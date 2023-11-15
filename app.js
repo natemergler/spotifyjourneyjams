@@ -42,12 +42,6 @@ const redirectUri = process.env.REDIRECTURI; // Change this if needed
 
 const MAPBOX_ACCESS_TOKEN = process.env.MAPBOX_ACCESS_TOKEN;
 
-// Set up Spotify API credentials
-const spotifyApi = new SpotifyWebApi({
-  clientId: clientId,
-  clientSecret: clientSecret,
-  redirectUri: redirectUri,
-});
 
 function geocode(address, access_token) {
   const endpoint = "https://api.mapbox.com/geocoding/v5/mapbox.places/";
@@ -181,34 +175,74 @@ app.get("/spotify", (req, res) => {
   res.sendFile(path.join(__dirname, "public", "spotify.html"));
 });
 
+// Serialize the SpotifyWebApi object for session storage
+const serializeSpotifyApi = (spotifyApi) => {
+  return {
+    clientId: spotifyApi.getClientId(),
+    clientSecret: spotifyApi.getClientSecret(),
+    redirectUri: spotifyApi.getRedirectURI(),
+    accessToken: spotifyApi.getAccessToken(),
+    refreshToken: spotifyApi.getRefreshToken(),
+  };
+};
+
+// Deserialize the SpotifyWebApi object from session storage
+const deserializeSpotifyApi = (serializedSpotifyApi) => {
+  const { clientId, clientSecret, redirectUri, accessToken, refreshToken } = serializedSpotifyApi;
+  const spotifyApi = new SpotifyWebApi({ clientId, clientSecret, redirectUri });
+  spotifyApi.setAccessToken(accessToken);
+  spotifyApi.setRefreshToken(refreshToken);
+  return spotifyApi;
+};
+
 // login route
-app.get("/login", (req, res) => {
+app.get('/login', (req, res) => {
+  const spotifyApi = new SpotifyWebApi({
+    clientId: clientId,
+    clientSecret: clientSecret,
+    redirectUri: redirectUri,
+  });
+
   try {
-    const scopes = ["playlist-modify-private", "playlist-modify-public"];
+    const scopes = ['playlist-modify-private', 'playlist-modify-public'];
     const authorizeURL = spotifyApi.createAuthorizeURL(scopes);
+    
+    // Serialize and store the SpotifyWebApi object in the session
+    req.session.spotifyApi = serializeSpotifyApi(spotifyApi);
+    
     res.redirect(authorizeURL);
   } catch (error) {
-    console.error("Error generating Spotify authorization URL:", error);
-    res.status(500).send("Internal Server Error");
+    console.error('Error generating Spotify authorization URL:', error);
+    res.status(500).send('Internal Server Error');
   }
 });
 
 // Handle Spotify API callback
-app.get("/callback", async (req, res) => {
+app.get('/callback', async (req, res) => {
   const { code } = req.query;
+
   try {
+    // Deserialize the SpotifyWebApi object from the session
+    const serializedSpotifyApi = req.session.spotifyApi;
+    const spotifyApi = deserializeSpotifyApi(serializedSpotifyApi);
+
     const data = await spotifyApi.authorizationCodeGrant(code);
     const { access_token, refresh_token } = data.body;
 
     // Set the access token and refresh token on the Spotify API object
     spotifyApi.setAccessToken(access_token);
     spotifyApi.setRefreshToken(refresh_token);
-    res.redirect("/form");
+
+    // Update the serialized SpotifyWebApi object in the session
+    req.session.spotifyApi = serializeSpotifyApi(spotifyApi);
+
+    res.redirect('/form');
   } catch (error) {
-    console.error("Error authenticating with Spotify:", error);
-    res.status(500).send("Error authenticating with Spotify");
+    console.error('Error authenticating with Spotify:', error);
+    res.status(500).send('Error authenticating with Spotify');
   }
 });
+
 
 app.get("/form", (req, res) => {
   res.sendFile(path.join(__dirname, "public", "form.html"));
@@ -219,6 +253,9 @@ app.post("/submit", async (req, res) => {
   const startingPoint = req.body.startingPoint;
   const destination = req.body.destination;
   const artist = req.body.artist;
+  // Deserialize the SpotifyWebApi object from the session
+  const serializedSpotifyApi = req.session.spotifyApi;
+  const spotifyApi = deserializeSpotifyApi(serializedSpotifyApi);
 
   try {
     // Geocode and store data in the session
@@ -244,6 +281,10 @@ app.post("/submit", async (req, res) => {
     console.log("Destination:", req.session.destinationData);
     console.log("Artist:", artist);
     console.log("Test Songs: ", req.session.songs);
+
+
+    // Update the serialized SpotifyWebApi object in the session
+    req.session.spotifyApi = serializeSpotifyApi(spotifyApi);
 
     // Render the EJS template with data
     res.render("result", {
@@ -281,7 +322,11 @@ app.get("/loadingtest", async (req, res) => {
 });
 
 app.get("/work", async (req, res) => {
-  try {
+  // Deserialize the SpotifyWebApi object from the session
+    const serializedSpotifyApi = req.session.spotifyApi;
+    const spotifyApi = deserializeSpotifyApi(serializedSpotifyApi);  
+    
+    try {
     // Ensure that startingPointData and destinationData are available in the session
     if (!req.session.startingPointData || !req.session.destinationData) {
       console.error("Starting point or destination data not available");
@@ -395,8 +440,6 @@ app.get("/work", async (req, res) => {
 
     // Create the playlist
     var roadTripPlaylist = await spotifyApi.createPlaylist(playlistName, {
-      public: false,
-      collaborative: false,
       description: playlistDescription,
     });
 
@@ -439,11 +482,18 @@ app.get("/work", async (req, res) => {
     console.error("Error creating playlist:", error.message);
     // Handle the error as needed
   }
+  // Update the serialized SpotifyWebApi object in the session
+  req.session.spotifyApi = serializeSpotifyApi(spotifyApi);
+
   res.redirect("/playlist")
 });
 
 // Route for displaying results
 app.get("/playlist", (req, res) => {
+  // Deserialize the SpotifyWebApi object from the session
+  const serializedSpotifyApi = req.session.spotifyApi;
+  const spotifyApi = deserializeSpotifyApi(serializedSpotifyApi);  
+
 
   try {
     // Render the EJS template with data
@@ -463,6 +513,10 @@ app.get("/playlist", (req, res) => {
 });
 
 app.get("/playlistdebug", (req, res) => {
+  // Deserialize the SpotifyWebApi object from the session
+  const serializedSpotifyApi = req.session.spotifyApi;
+  const spotifyApi = deserializeSpotifyApi(serializedSpotifyApi);  
+
   try {
     const filePath = path.join(__dirname, 'test.json');
     const debugsession = require(filePath);
