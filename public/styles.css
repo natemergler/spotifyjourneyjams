@@ -260,3 +260,7 @@ button {
 p {
   font-size: 28px;
 }
+
+b {
+  font-weight: bolder;
+}

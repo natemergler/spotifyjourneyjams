@@ -14,8 +14,19 @@
                 <img id='spotifylogo' src="static/spotifylogo.png">
                 <img id='journeyjamslogo' src="static/spotifyjourneyjamslogo.png">
             </div>
-            <h2 class="purple" id="duration"></h2>
-            <h3 class="purple" id="distance"></h3>
+            <h2 class="purple" id="duration">
+                <% 
+                    const hours = Math.floor(duration / 3600);
+                    const minutes = Math.floor((duration % 3600) / 60);
+            
+                    if (hours < 1) {
+                        %><b><%= minutes %></b> minutes<%
+                    } else {
+                        %><b><%= hours %></b> hours and <b><%= minutes %></b> minutes<%
+                    }
+                %>
+            </h2>            
+            <h3 class="purple" id="distance"><b><%= (distance * 0.000621371).toFixed(1) %></b> miles</h3>
             <h3 id="orange">Includes:</h3>
             <div id="artistnames" class="purple">
 
@@ -30,31 +41,6 @@
         window.onSpotifyIframeApiReady = (IFrameAPI) => {};
 
         var songs = <%- JSON.stringify(songs) %>;
-
-        // Perform calculations on the client side
-        var duration = <%= duration %>;
-        var distance = <%= distance %>;
-
-        const hours = Math.floor(duration / 3600);
-        const minutes = Math.floor((duration % 3600) / 60);
-
-        let time;
-
-        if (hours < 1) {
-            time = minutes + " minutes";
-        } else {
-            time = hours + " hours and " + minutes + " minutes";
-        }
-
-        const conversionFactor = 0.000621371;
-        const miles = distance * conversionFactor;
-        const AMERICA = Math.round(miles * 10) / 10;
-
-        // Display the calculated values and examples in the HTML
-        document.getElementById('duration').textContent = time;
-        document.getElementById('distance').textContent = AMERICA + " miles";
-
-        // Parse the songs array
 
         // Display the first three artist names in the 'artistnames' div
         var artistNamesDiv = document.getElementById('artistnames');
