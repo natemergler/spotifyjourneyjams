@@ -6,6 +6,8 @@ const bodyParser = require("body-parser");
 const session = require("express-session");
 const cookieParser = require("cookie-parser");
 const fetch = require('node-fetch');
+const cors = require('cors');
+
 
 const app = express();
 // Serve static files from the 'public' directory
@@ -18,6 +20,13 @@ app.set("view engine", "ejs");
 // Set the views directory
 app.set("views", path.join(__dirname, "views"));
 
+const corsOptions = {
+  origin: /\.spotify\.com$/, // Allows any subdomain under spotify.com
+  methods: 'GET',
+};
+
+app.use(cors(corsOptions));
+
 app.use(cookieParser());
 
 app.use(
@@ -28,6 +37,12 @@ app.use(
   })
 );
 
+app.use((req, res, next) => {
+  // Set Cache-Control header to make the cache last for 30 minutes
+  res.setHeader('Cache-Control', 'public, max-age=1800');
+  next();
+});
+
 // Route for the root URL
 app.get("/", (req, res) => {
   res.sendFile(path.join(__dirname, "public", "index.html"));
@@ -35,10 +50,10 @@ app.get("/", (req, res) => {
 
 //Server side constants used
 const port = 3000;
-const clientId = process.env.CLIENTID;
-const clientSecret = process.env.CLIENTSECRET;
+const clientId1 = process.env.CLIENTID;
+const clientSecret1 = process.env.CLIENTSECRET;
 
-const redirectUri = process.env.REDIRECTURI; // Change this if needed
+const redirectUri1 = process.env.REDIRECTURI; // Change this if needed
 
 const MAPBOX_ACCESS_TOKEN = process.env.MAPBOX_ACCESS_TOKEN;
 
@@ -188,19 +203,24 @@ const serializeSpotifyApi = (spotifyApi) => {
 
 // Deserialize the SpotifyWebApi object from session storage
 const deserializeSpotifyApi = (serializedSpotifyApi) => {
+  if (!serializedSpotifyApi) {
+    // If the serialized object is undefined or falsy, return a new SpotifyWebApi instance
+    return new SpotifyWebApi({ clientId: clientId1, clientSecret: clientSecret1, redirectUri: redirectUri1 });
+  }
+
   const { clientId, clientSecret, redirectUri, accessToken, refreshToken } = serializedSpotifyApi;
   const spotifyApi = new SpotifyWebApi({ clientId, clientSecret, redirectUri });
   spotifyApi.setAccessToken(accessToken);
   spotifyApi.setRefreshToken(refreshToken);
   return spotifyApi;
-};
+}; 
 
 // login route
 app.get('/login', (req, res) => {
   const spotifyApi = new SpotifyWebApi({
-    clientId: clientId,
-    clientSecret: clientSecret,
-    redirectUri: redirectUri,
+    clientId: clientId1,
+    clientSecret: clientSecret1,
+    redirectUri: redirectUri1,
   });
 
   try {

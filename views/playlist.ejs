@@ -1,3 +1,4 @@
+<!-- language: ejs -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -64,16 +65,21 @@
         }
 
         var playlist = <%- JSON.stringify(playlist) %>;
-        var playlistUri = playlist.body.uri;
-        window.onSpotifyIframeApiReady = (IFrameAPI) => {
-            const element = document.getElementById('embed-iframe');
-            const options = {
-                uri: playlistUri,
-                height: 450
-                };
+    var playlistUri = playlist.body.uri;
+
+    window.onSpotifyIframeApiReady = (IFrameAPI) => {
+        const element = document.getElementById('embed-iframe');
+        const options = {
+            uri: playlistUri,
+            height: 450
+        };
+
+        // Delay the creation of the iframe by 2000 milliseconds (2 seconds)
+        setTimeout(() => {
             const callback = (EmbedController) => {};
             IFrameAPI.createController(element, options, callback);
-        };
+        }, 1000);
+    };
     </script>
 </body>
 </html>
