@@ -307,7 +307,7 @@ app.post("/submit", async (req, res) => {
     req.session.spotifyApi = serializeSpotifyApi(spotifyApi);
 
     // Render the EJS template with data
-    res.render("result", {
+    res.render("verify", {
       startingPoint: req.session.startingPointData,
       destination: req.session.destinationData,
       artist: req.session.startingArtist.name,
