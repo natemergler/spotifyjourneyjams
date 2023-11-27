@@ -5,6 +5,8 @@ require("dotenv").config();
 const bodyParser = require("body-parser");
 const session = require("express-session");
 const cookieParser = require("cookie-parser");
+const { geocode, drivingTraffic, searchArtist, topTracks, similarArtists, shuffleArray } = require('./utils');
+const fetch = require('node-fetch');
 
 //Server side constants used
 const port = 3000;
@@ -114,10 +116,62 @@ app.get('/callback', spotifyApiMiddleware, async (req, res) => {
       refreshToken: spotifyApi.getRefreshToken(),
     };
 
-    res.redirect('/debug');
+    res.redirect('/form');
   } catch (error) {
     console.error('Error authenticating with Spotify:', error);
     return; // Add this line to terminate the function after sending the error response
+  }
+});
+
+app.get("/form", (req, res) => {
+  res.sendFile(path.join(__dirname, "public", "form.html"));
+});
+
+app.post("/submit", spotifyApiMiddleware, async (req, res) => {
+  console.log("GOTTEM");
+  const startingPoint = req.body.startingPoint;
+  const destination = req.body.destination;
+  const artist = req.body.artist;
+  // Deserialize the SpotifyWebApi object from the session
+  var spotifyApi = req.session.spotifyApi;
+
+  try {
+    // Geocode and store data in the session
+    req.session.startingPointData = await geocode(
+      startingPoint,
+      MAPBOX_ACCESS_TOKEN
+    );
+    req.session.destinationData = await geocode(
+      destination,
+      MAPBOX_ACCESS_TOKEN
+    );
+
+    // Fetch additional data (if needed)
+    const startingArtist = await searchArtist(spotifyApi, artist);
+    const songs = await topTracks(spotifyApi, startingArtist.id);
+
+    // Store additional data in the session
+    req.session.startingArtist = startingArtist;
+    req.session.songs = songs;
+
+    // Log the data
+    console.log("Starting Point:", req.session.startingPointData);
+    console.log("Destination:", req.session.destinationData);
+    console.log("Artist:", artist);
+    console.log("Test Songs: ", req.session.songs);
+
+    // Render the EJS template with data
+    res.render("verify", {
+      startingPoint: req.session.startingPointData,
+      destination: req.session.destinationData,
+      artist: req.session.startingArtist.name,
+      testSongs: req.session.songs,
+      artistImage: req.session.startingArtist.images[0].url
+    });
+  } catch (error) {
+    // Handle errors, log, or send an error response
+    console.error(error.message);
+    res.status(500).send("Error submitting request");
   }
 });
 
