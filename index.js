@@ -50,7 +50,7 @@ function spotifyApiMiddleware(req, res, next) {
     spotifyApi.setAccessToken(req.session.spotifyApi.accessToken);
     spotifyApi.setRefreshToken(req.session.spotifyApi.refreshToken);
 
-    req.spotifyApi = spotifyApi;
+    req.session.spotifyApi = spotifyApi;
   } 
   next();
 }
@@ -106,7 +106,7 @@ app.get('/callback', spotifyApiMiddleware, async (req, res) => {
     spotifyApi.setRefreshToken(refresh_token);
 
     // Update the serialized SpotifyWebApi object in the session
-    req.session.spotifyApi = {
+      req.session.spotifyApi = {
       clientId: spotifyApi.getClientId(),
       clientSecret: spotifyApi.getClientSecret(),
       redirectUri: spotifyApi.getRedirectURI(),
@@ -124,7 +124,7 @@ app.get('/callback', spotifyApiMiddleware, async (req, res) => {
 app.get("/debug", spotifyApiMiddleware, (req, res) => {
 
   try {
-    const spotifyApi = req.spotifyApi
+    const spotifyApi = req.session.spotifyApi
   // Create a private playlist
     spotifyApi.createPlaylist('My playlist', { 'description': 'My description', 'public': true })
     .then(function(data) {
