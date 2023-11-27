@@ -59,9 +59,33 @@ function shuffleArray(array) {
   }
 }
 
+async function addTracks(spotifyApi, songIds, playlistUri) {
+  const chunkSize = 100;
+  const totalChunks = Math.ceil(songIds.length / chunkSize);
+
+  for (let i = 0; i < totalChunks; i++) {
+    const startIndex = i * chunkSize;
+    const endIndex = (i + 1) * chunkSize;
+    const chunkSongIds = songIds.slice(startIndex, endIndex);
+
+    try {
+      // Add songs to the playlist
+      await spotifyApi.addTracksToPlaylist(
+        playlistUri,
+        chunkSongIds
+      );
+    } catch (error) {
+      console.error(
+        `Error adding chunk ${i + 1} to the playlist:`,
+        error.message
+      );
+    }
+  }
+}
+
 module.exports = {
   searchArtist,
   topTracks,
   similarArtists,
-  shuffleArray,
+  addTracks,
 };

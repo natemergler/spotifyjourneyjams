@@ -50,10 +50,7 @@ async function drivingTraffic(coordinate1, coordinate2, accessToken) {
       const duration = route.duration;
       const distance = route.distance;
 
-      const routeDuration = `Duration: ${duration} seconds`;
-      const routeDistance = `Distance: ${distance} meters`;
-
-      return { duration, distance, routeDuration, routeDistance };
+      return { duration, distance };
     } else {
       return {
         errorMessage: `Directions Failed, Please Re-input. API request failed with status code: ${response.status}`,

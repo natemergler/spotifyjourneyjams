@@ -5,9 +5,17 @@ require("dotenv").config();
 const bodyParser = require("body-parser");
 const session = require("express-session");
 const cookieParser = require("cookie-parser");
-const { geocode, drivingTraffic } = require('./geocodeutils');
-const {searchArtist, topTracks, similarArtists, shuffleArray } = require('./spotifyutils');
-const fetch = require('node-fetch');
+const { geocode, drivingTraffic } = require("./geocodeutils");
+const {
+  searchArtist,
+  topTracks,
+  similarArtists,
+  addTracks
+} = require("./spotifyutils");
+const {
+  shuffleArray,
+} = require("./utils")
+const fetch = require("node-fetch");
 
 //Server side constants used
 const port = 3000;
@@ -15,7 +23,6 @@ const clientId = process.env.CLIENTID;
 const clientSecret = process.env.CLIENTSECRET;
 const redirectUri = process.env.REDIRECTURI; // Change this if needed
 const MAPBOX_ACCESS_TOKEN = process.env.MAPBOX_ACCESS_TOKEN;
-
 
 const app = express();
 // Serve static files from the 'public' directory
@@ -38,23 +45,21 @@ app.use(
   })
 );
 
-
-// Route for the root URL
-/*app.get("/", (req, res) => {
-  res.sendFile(path.join(__dirname, "public", "index.html"));
-});*/
-
 // spotifyApi authentication middleware
 function spotifyApiMiddleware(req, res, next) {
   if (!req.session.spotifyApi) {
-      res.redirect('/login');
+    res.redirect("/login");
   } else {
-    const spotifyApi = new SpotifyWebApi({clientId: clientId, clientSecret: clientSecret, redirectUri: redirectUri})
+    const spotifyApi = new SpotifyWebApi({
+      clientId: clientId,
+      clientSecret: clientSecret,
+      redirectUri: redirectUri,
+    });
     spotifyApi.setAccessToken(req.session.spotifyApi.accessToken);
     spotifyApi.setRefreshToken(req.session.spotifyApi.refreshToken);
 
     req.spotifyApi = spotifyApi;
-  } 
+  }
   next();
 }
 
@@ -63,44 +68,32 @@ app.get("/spotify", (req, res) => {
   res.sendFile(path.join(__dirname, "public", "spotify.html"));
 });
 
-
 // login route
-app.get('/login', (req, res) => {
+app.get("/login", (req, res) => {
   const spotifyApi = new SpotifyWebApi({
     clientId: clientId,
     clientSecret: clientSecret,
     redirectUri: redirectUri,
   });
   try {
-    const scopes = ['playlist-modify-private', 'playlist-modify-public'];
+    const scopes = ["playlist-modify-private", "playlist-modify-public"];
     const authorizeURL = spotifyApi.createAuthorizeURL(scopes);
-    
-    req.session.spotifyApi = {
-      clientId: spotifyApi.getClientId(),
-      clientSecret: spotifyApi.getClientSecret(),
-      redirectUri: spotifyApi.getRedirectURI(),
-      accessToken: spotifyApi.getAccessToken(),
-      refreshToken: spotifyApi.getRefreshToken(),
-    };
-
     res.redirect(authorizeURL);
   } catch (error) {
-    console.error('Error generating Spotify authorization URL:', error);
-    res.status(500).send('Internal Server Error');
+    console.error("Error generating Spotify authorization URL:", error);
+    res.status(500).send("Internal Server Error");
   }
 });
 
 // Handle Spotify API callback
-app.get('/callback', spotifyApiMiddleware, async (req, res) => {
+app.get("/callback", async (req, res) => {
   const { code } = req.query;
-
+  const spotifyApi = new SpotifyWebApi({
+    clientId: clientId,
+    clientSecret: clientSecret,
+    redirectUri: redirectUri,
+  });
   try {
-    const spotifyApi = new SpotifyWebApi({
-      clientId: clientId,
-      clientSecret: clientSecret,
-      redirectUri: redirectUri,
-    });;
-
     const data = await spotifyApi.authorizationCodeGrant(code);
     const { access_token, refresh_token } = data.body;
 
@@ -109,7 +102,7 @@ app.get('/callback', spotifyApiMiddleware, async (req, res) => {
     spotifyApi.setRefreshToken(refresh_token);
 
     // Update the serialized SpotifyWebApi object in the session
-      req.session.spotifyApi = {
+    req.session.spotifyApi = {
       clientId: spotifyApi.getClientId(),
       clientSecret: spotifyApi.getClientSecret(),
       redirectUri: spotifyApi.getRedirectURI(),
@@ -117,9 +110,9 @@ app.get('/callback', spotifyApiMiddleware, async (req, res) => {
       refreshToken: spotifyApi.getRefreshToken(),
     };
 
-    res.redirect('/form');
+    res.redirect("/form");
   } catch (error) {
-    console.error('Error authenticating with Spotify:', error);
+    console.error("Error authenticating with Spotify:", error);
     return; // Add this line to terminate the function after sending the error response
   }
 });
@@ -129,11 +122,8 @@ app.get("/form", (req, res) => {
 });
 
 app.post("/submit", spotifyApiMiddleware, async (req, res) => {
-  console.log("GOTTEM");
-  const startingPoint = req.body.startingPoint;
-  const destination = req.body.destination;
-  const artist = req.body.artist;
-  var spotifyApi = req.spotifyApi;
+  const { startingPoint, destination, artist } = req.body;
+  const spotifyApi = req.spotifyApi;
 
   try {
     // Geocode and store data in the session
@@ -154,19 +144,13 @@ app.post("/submit", spotifyApiMiddleware, async (req, res) => {
     req.session.startingArtist = startingArtist;
     req.session.songs = songs;
 
-    // Log the data
-    console.log("Starting Point:", req.session.startingPointData);
-    console.log("Destination:", req.session.destinationData);
-    console.log("Artist:", artist);
-    console.log("Test Songs: ", req.session.songs);
-
     // Render the EJS template with data
     res.render("verify", {
       startingPoint: req.session.startingPointData,
       destination: req.session.destinationData,
       artist: req.session.startingArtist.name,
       testSongs: req.session.songs,
-      artistImage: req.session.startingArtist.images[0].url
+      artistImage: req.session.startingArtist.images[0].url,
     });
   } catch (error) {
     // Handle errors, log, or send an error response
@@ -178,17 +162,17 @@ app.post("/submit", spotifyApiMiddleware, async (req, res) => {
 app.get("/loading", spotifyApiMiddleware, async (req, res) => {
   try {
     // Render the "loading" view immediately
-    res.render("loading");
+    res.render("loading", { includeScript: true });
   } catch (error) {
     console.error("Error during loading:", error);
-    res.status(500).json({ error: "Internal Server Error" });
+    res.status(500).json({ error: "Internal Server Error on loading screen" });
   }
 });
 
-app.get("/loadingtest", async (req, res) => {
+app.get("/loadingdebug", async (req, res) => {
   try {
-    // Render the "loading" view immediately
-    res.render("loadingtest");
+    // Render the "loading" view immediately and make the script for /work not run
+    res.render("loading", { includeScript: false });
   } catch (error) {
     console.error("Error during loading:", error);
     res.status(500).json({ error: "Internal Server Error" });
@@ -197,33 +181,32 @@ app.get("/loadingtest", async (req, res) => {
 
 app.get("/work", spotifyApiMiddleware, async (req, res) => {
   // Deserialize the SpotifyWebApi object from the session
-    const spotifyApi = req.spotifyApi;
-    
-    try {
+  const spotifyApi = req.spotifyApi;
+
+  try {
     // Ensure that startingPointData and destinationData are available in the session
     if (!req.session.startingPointData || !req.session.destinationData) {
       console.error("Starting point or destination data not available");
-      res.redirect('/form');
+      res.redirect("/form");
       return;
     }
 
     // Get driving traffic information
-    var { duration, distance, routeDuration, routeDistance, errorMessage } =
+    var { duration, distance, errorMessage } =
       await drivingTraffic(
         req.session.startingPointData.coordinates,
         req.session.destinationData.coordinates,
         MAPBOX_ACCESS_TOKEN
       );
-    
-    req.session.duration = duration
-    req.session.distance = distance
+
+    req.session.duration = duration;
+    req.session.distance = distance;
 
     if (errorMessage) {
       console.error(errorMessage);
-      res.status(500).json({ error: "Error processing the request" });
+      res.status(500).json({ error: "Error processing the request for driving directions" });
       return;
     }
-    console.log(routeDistance + " " + routeDuration);
   } catch (error) {
     console.error("Error during distance calculation:", error);
     res.status(500).json({ error: "Error during distance calculation" });
@@ -243,7 +226,7 @@ app.get("/work", spotifyApiMiddleware, async (req, res) => {
       } while (indicesForSearch.includes(j));
       indicesForSearch.push(j);
     }
-    req.session.artists = artistDictionary
+    req.session.artists = artistDictionary;
   } catch (error) {
     console.error("Error making list of artists:", error);
     res.status(500).json({ error: "Error making list of artists" });
@@ -298,7 +281,7 @@ app.get("/work", spotifyApiMiddleware, async (req, res) => {
   }
 
   shuffleArray(selectedSongs);
-  req.session.songs = selectedSongs
+  req.session.songs = selectedSongs;
   var songIds = selectedSongs.map((song) => song.id);
 
   try {
@@ -318,48 +301,19 @@ app.get("/work", spotifyApiMiddleware, async (req, res) => {
     var playlistUri = roadTripPlaylist.body.id;
 
     req.session.playlist = roadTripPlaylist;
+    addTracks(spotifyApi, songIds, playlistUri)
 
-    console.log("Creating Playlist");
-
-    console.log("Playlist URI:", playlistUri);
-
-    console.log("/n /n Song IDs:", songIds);
-
-    const chunkSize = 100;
-    const totalChunks = Math.ceil(songIds.length / chunkSize);
-
-    for (let i = 0; i < totalChunks; i++) {
-      const startIndex = i * chunkSize;
-      const endIndex = (i + 1) * chunkSize;
-      const chunkSongIds = songIds.slice(startIndex, endIndex);
-
-      try {
-        // Add songs to the playlist
-        const response = await spotifyApi.addTracksToPlaylist(
-          playlistUri,
-          chunkSongIds
-        );
-
-        console.log(`Added chunk ${i + 1} of ${totalChunks} to the playlist`);
-      } catch (error) {
-        console.error(
-          `Error adding chunk ${i + 1} to the playlist:`,
-          error.message
-        );
-        // Handle the error as needed
-      }
-    }
   } catch (error) {
     console.error("Error creating playlist:", error.message);
     // Handle the error as needed
   }
 
-  res.redirect("/playlist")
+  res.redirect("/playlist");
 });
 
 // Route for displaying results
 app.get("/playlist", spotifyApiMiddleware, (req, res) => {
-  const spotifyApi = req.session.spotifyApi;  
+  const spotifyApi = req.session.spotifyApi;
 
   try {
     // Render the EJS template with data
@@ -370,7 +324,6 @@ app.get("/playlist", spotifyApiMiddleware, (req, res) => {
       duration: req.session.duration,
       distance: req.session.distance, // Make sure to pass the playlist data
     });
-
   } catch (error) {
     // Handle errors, log, or send an error response
     console.error(error.message);
@@ -379,18 +332,24 @@ app.get("/playlist", spotifyApiMiddleware, (req, res) => {
 });
 
 app.get("/debug", spotifyApiMiddleware, (req, res) => {
-
   try {
-    const spotifyApi = req.session.spotifyApi
-  // Create a private playlist
-    spotifyApi.createPlaylist('My playlist', { 'description': 'My description', 'public': true })
-    .then(function(data) {
-      console.log('Created playlist!');
-    }, function(err) {
-      console.log('Something went wrong!', err);
-    });
+    const spotifyApi = req.session.spotifyApi;
+    // Create a private playlist
+    spotifyApi
+      .createPlaylist("My playlist", {
+        description: "My description",
+        public: true,
+      })
+      .then(
+        function (data) {
+          console.log("Created playlist!");
+        },
+        function (err) {
+          console.log("Something went wrong!", err);
+        }
+      );
   } catch (error) {
-    console.error('Error loading or parsing JSON file:', error);
+    console.error("Error loading or parsing JSON file:", error);
     return;
   }
 });
