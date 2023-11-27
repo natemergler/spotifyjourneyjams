@@ -5,7 +5,8 @@ require("dotenv").config();
 const bodyParser = require("body-parser");
 const session = require("express-session");
 const cookieParser = require("cookie-parser");
-const { geocode, drivingTraffic, searchArtist, topTracks, similarArtists, shuffleArray } = require('./utils');
+const { geocode, drivingTraffic } = require('./geocodeutils');
+const {searchArtist, topTracks, similarArtists, shuffleArray } = require('./spotifyutils');
 const fetch = require('node-fetch');
 
 //Server side constants used
@@ -39,9 +40,9 @@ app.use(
 
 
 // Route for the root URL
-app.get("/", (req, res) => {
+/*app.get("/", (req, res) => {
   res.sendFile(path.join(__dirname, "public", "index.html"));
-});
+});*/
 
 // spotifyApi authentication middleware
 function spotifyApiMiddleware(req, res, next) {
