@@ -83,9 +83,73 @@ async function addTracks(spotifyApi, songIds, playlistUri) {
   }
 }
 
+async function makeArtistList(spotifyApi, startingArtist, duration) {
+  try {
+    // make list of artists
+    let baseArtist = startingArtist.id;
+    var artistDictionary = [startingArtist];
+    const indicesForSearch = [0];
+    while (artistDictionary.length < Math.floor(duration / 60 / 30) * 2 + 6) {
+      const similarArtistList = await similarArtists(spotifyApi, baseArtist);
+      artistDictionary.push(...similarArtistList);
+
+      let j;
+      do {
+        j = Math.floor(Math.random() * (artistDictionary.length - 1) + 1);
+      } while (indicesForSearch.includes(j));
+      indicesForSearch.push(j);
+    }
+    return artistDictionary;
+  } catch (error) {
+    console.error("Error making list of artists:", error);
+    res.status(500).json({ error: "Error making list of artists" });
+  }
+
+}
+
+async function pickSongs(duration, overshootSeconds, songsToSelectFrom) {
+  const selectedSongs = [];
+  var currentDuration = 0;
+
+  while (currentDuration < duration) {
+    var randomSong = songsToSelectFrom[Math.floor(Math.random() * songsToSelectFrom.length)];
+    songDuration = randomSong.duration_ms / 1000;
+
+    if (currentDuration + songDuration > duration + overshootSeconds) {
+      if (selectedSongs.length > 0) {
+        replacingIndex = Math.floor(Math.random() * selectedSongs.length);
+        selectedSongs[replacingIndex] =
+          songsToSelectFrom[Math.floor(Math.random() * songsToSelectFrom.length)];
+        currentDuration = selectedSongs.reduce(
+          (sum, song) => sum + song.duration_ms / 1000,
+          0
+        );
+      }
+    } else {
+      selectedSongs.push(randomSong);
+      currentDuration += songDuration;
+      const indexOfRandomSong = songsToSelectFrom.indexOf(randomSong);
+      if (indexOfRandomSong !== -1) {
+        songsToSelectFrom.splice(indexOfRandomSong, 1);
+      }
+    }
+  }
+  return selectedSongs;
+}
+
+function shuffleArray(array) {
+  for (let i = array.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [array[i], array[j]] = [array[j], array[i]]; // Swap elements
+  }
+}
+
 module.exports = {
   searchArtist,
   topTracks,
   similarArtists,
   addTracks,
-};
+  makeArtistList,
+  pickSongs,
+  shuffleArray,
+}

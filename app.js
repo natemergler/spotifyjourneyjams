@@ -5,16 +5,16 @@ require("dotenv").config();
 const bodyParser = require("body-parser");
 const session = require("express-session");
 const cookieParser = require("cookie-parser");
-const { geocode, drivingTraffic } = require("./geocodeutils");
+const { geocode, drivingTraffic} = require("./geocodeutils");
 const {
   searchArtist,
   topTracks,
   similarArtists,
-  addTracks
-} = require("./spotifyutils");
-const {
+  addTracks,
   shuffleArray,
-} = require("./utils")
+  makeArtistList,
+  pickSongs,
+} = require("./spotifyutils");
 const fetch = require("node-fetch");
 
 //Server side constants used
@@ -23,8 +23,10 @@ const clientId = process.env.CLIENTID;
 const clientSecret = process.env.CLIENTSECRET;
 const redirectUri = process.env.REDIRECTURI; // Change this if needed
 const MAPBOX_ACCESS_TOKEN = process.env.MAPBOX_ACCESS_TOKEN;
+exports.MAPBOX_ACCESS_TOKEN = MAPBOX_ACCESS_TOKEN;
 
 const app = express();
+exports.app = app;
 // Serve static files from the 'public' directory
 app.use(express.static(path.join(__dirname, "public")));
 app.use(express.urlencoded({ extended: true }));
@@ -62,6 +64,7 @@ function spotifyApiMiddleware(req, res, next) {
   }
   next();
 }
+exports.spotifyApiMiddleware = spotifyApiMiddleware;
 
 // Route for the root URL
 app.get("/spotify", (req, res) => {
@@ -179,7 +182,7 @@ app.get("/loadingdebug", async (req, res) => {
   }
 });
 
-app.get("/work", spotifyApiMiddleware, async (req, res) => {
+;app.get("/work", spotifyApiMiddleware, async (req, res) => {
   // Deserialize the SpotifyWebApi object from the session
   const spotifyApi = req.spotifyApi;
 
@@ -192,12 +195,11 @@ app.get("/work", spotifyApiMiddleware, async (req, res) => {
     }
 
     // Get driving traffic information
-    var { duration, distance, errorMessage } =
-      await drivingTraffic(
-        req.session.startingPointData.coordinates,
-        req.session.destinationData.coordinates,
-        MAPBOX_ACCESS_TOKEN
-      );
+    var { duration, distance, errorMessage } = await drivingTraffic(
+      req.session.startingPointData.coordinates,
+      req.session.destinationData.coordinates,
+      MAPBOX_ACCESS_TOKEN
+    );
 
     req.session.duration = duration;
     req.session.distance = distance;
@@ -211,27 +213,10 @@ app.get("/work", spotifyApiMiddleware, async (req, res) => {
     console.error("Error during distance calculation:", error);
     res.status(500).json({ error: "Error during distance calculation" });
   }
-  try {
-    // make list of artists
-    let baseArtist = req.session.startingArtist.id;
-    var artistDictionary = [req.session.startingArtist];
-    const indicesForSearch = [0];
-    while (artistDictionary.length < Math.floor(duration / 60 / 30) * 2 + 6) {
-      const similarArtistList = await similarArtists(spotifyApi, baseArtist);
-      artistDictionary.push(...similarArtistList);
 
-      let j;
-      do {
-        j = Math.floor(Math.random() * (artistDictionary.length - 1) + 1);
-      } while (indicesForSearch.includes(j));
-      indicesForSearch.push(j);
-    }
-    req.session.artists = artistDictionary;
-  } catch (error) {
-    console.error("Error making list of artists:", error);
-    res.status(500).json({ error: "Error making list of artists" });
-  }
-
+  // list of artists is an external function now
+  const artistDictionary = await makeArtistList(spotifyApi, req.session.startingArtist, duration)
+  req.session.artist = artistDictionary
   try {
     var songs = req.session.songs;
     //make list of songs
@@ -249,36 +234,10 @@ app.get("/work", spotifyApiMiddleware, async (req, res) => {
   //shuffle songs and prepare for playlist
   const songsToSelectFrom = [...songs]; // Using the spread operator to create a shallow copy
   shuffleArray(songsToSelectFrom); // Assuming shuffleArray is a function that shuffles the array
-  const selectedSongs = [];
-  var currentDuration = 0;
-  const overshootSeconds = 120;
-
-  while (currentDuration < duration) {
-    var randomSong =
-      songsToSelectFrom[Math.floor(Math.random() * songsToSelectFrom.length)];
-    songDuration = randomSong.duration_ms / 1000;
-
-    if (currentDuration + songDuration > duration + overshootSeconds) {
-      if (selectedSongs.length > 0) {
-        replacingIndex = Math.floor(Math.random() * selectedSongs.length);
-        selectedSongs[replacingIndex] =
-          songsToSelectFrom[
-            Math.floor(Math.random() * songsToSelectFrom.length)
-          ];
-        currentDuration = selectedSongs.reduce(
-          (sum, song) => sum + song.duration_ms / 1000,
-          0
-        );
-      }
-    } else {
-      selectedSongs.push(randomSong);
-      currentDuration += songDuration;
-      const indexOfRandomSong = songsToSelectFrom.indexOf(randomSong);
-      if (indexOfRandomSong !== -1) {
-        songsToSelectFrom.splice(indexOfRandomSong, 1);
-      }
-    }
-  }
+  
+  const overshootSeconds = 120
+  // external function to make song list now
+  selectedSongs = await pickSongs(duration, overshootSeconds, songsToSelectFrom)
 
   shuffleArray(selectedSongs);
   req.session.songs = selectedSongs;
@@ -301,7 +260,7 @@ app.get("/work", spotifyApiMiddleware, async (req, res) => {
     var playlistUri = roadTripPlaylist.body.id;
 
     req.session.playlist = roadTripPlaylist;
-    addTracks(spotifyApi, songIds, playlistUri)
+    addTracks(spotifyApi, songIds, playlistUri);
 
   } catch (error) {
     console.error("Error creating playlist:", error.message);
@@ -310,6 +269,7 @@ app.get("/work", spotifyApiMiddleware, async (req, res) => {
 
   res.redirect("/playlist");
 });
+
 
 // Route for displaying results
 app.get("/playlist", spotifyApiMiddleware, (req, res) => {
