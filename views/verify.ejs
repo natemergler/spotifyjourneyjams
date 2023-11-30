@@ -4,54 +4,65 @@
 <head>
   <meta charset="UTF-8">
   <title>Spotify Journey</title>
-  <link rel="stylesheet" href="styles.css">
+  <script src="https://cdn.tailwindcss.com"></script>
 </head>
 
-<body class="page2">
-  <div class="container">
-
-    <div class="results">
-      <section id="locations">
-        <h2>Is this the correct origin and destination?</h2>
-        <h3><%= startingPoint.addressFull %></h3>
-        <h2>to</h2>
-        <h3><%= destination.addressFull %></h3>
-        <a href="/form"><button class="no">No</button></a>
-        <button class="button" onclick="showSection('artistSection')">Yes!</button>
-      </section>
-
-      <section id="artistSection" style="display: none;">
-          <h3>Is this the artist you wanted?</h3>
-            <h2><%= artist %></h2>
-          <div class="artist-details">
-            <div class="mainartistimage">
-              <img id="artistimage" src="<%= artistImage %>">
-            </div>
-            <div class="song-names">
-              <h3><%= testSongs[0].name %></h3>
-              <h3><%= testSongs[1].name %></h3>
-            </div>
+<body class="">
+  <div class="flex h-screen items-center bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-teal-400 via-amber-200 to-violet-600">
+    <div class="m-auto">
+      <div class="my-6 flex items-center justify-center">
+        <p class="mx-8 text-xl font-medium">Made for</p>
+        <img src="static/spotifylogo.png" class="w-56" />
+      </div>
+      <img src="static/spotifyjourneyjamslogo.png" class="w-108 px-10" />
+      <div class="justify-center p-10">
+        <section id="locations" class="rounded-3xl bg-transparent p-8 text-center shadow-2xl" >
+          <div class="">
+            <h2 class="text-orange- m-3 text-lg font-bold">Are you going from</h2>
+            <h2 class="rounded-full text-2xl font-medium"><%= startingPoint.addressFull %></h2>
+            <h2 class="m-3 text-lg text-orange-600">to</h2>
+            <h2 class="w-full rounded-full text-2xl font-medium"><%= destination.addressFull %></h2>
           </div>
-          <a href="/form"><button class="no">No</button></a>
-          <a href="/loading"><button class="button">Yes!</button></a>
+          <div class="pt-10">
+            <a href="/form"><button class="mx-3 rounded-full bg-red-500 p-3 px-8 text-xl text-white">No</button></a>
+            <button class="rounded-full bg-green-600 p-3 px-8 text-xl text-white" onclick="showSection('artistSection')">Yes!</button>
+          </div>
         </section>
-        
-      </section>
 
+        <section id="artistSection" class="h-auto rounded-3xl bg-transparent p-8 text-center shadow-2xl" style="display:none;">
+          <div class="flex">
+            <div class="flex-none p-6">
+              <h3 class="text-white text-lg">Are you looking for?</h3>
+              <h2 class="font-bold text-orange-600 text-3xl"><%= artist %></h2>
+              <div class="w-40 m-5">
+                <img id="artistimage" src="<%= artistImage %>">
+              </div>
+            </div>
+            <div class="flex-grow text-right p-6 ">
+              <h2 class="text-orange-600 text-lg">Who's made hits like:<h2>
+                <h3 class="text-2xl p-10 font-medium"><%= testSongs[0].name %></h3>
+                <h3 class="text-2xl p-10 font-medium"><%= testSongs[1].name %></h3>
+              </div>
+            </div>
+            <div class="pt-10">
+            <a href="/form"><button class="mx-3 rounded-full bg-red-500 p-3 px-8 text-xl text-white">No</button></a>
+            <a href="/loading"><button class="rounded-full bg-green-600 p-3 px-8 text-xl text-white" onclick="showSection('artistSection')">Yes!</button></a>
+            </div>
+          </section>
+
+        </div>
+      </div>
     </div>
 
-  </div>
+    <script>
+      function showSection(sectionId) {
+        // Hide all sections
+        document.getElementById('locations').style.display = 'none';
+        document.getElementById('artistSection').style.display = 'none';
 
-  <script>
-    function showSection(sectionId) {
-      // Hide all sections
-      document.getElementById('locations').style.display = 'none';
-      document.getElementById('artistSection').style.display = 'none';
-
-      // Show the selected section
-      document.getElementById(sectionId).style.display = 'block';
-    }
-  </script>
-</body>
-
+        // Show the selected section
+        document.getElementById(sectionId).style.display = 'block';
+      }
+    </script>
+  </body>
 </html>
