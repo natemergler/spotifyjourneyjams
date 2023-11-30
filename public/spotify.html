@@ -2,13 +2,22 @@
 <html>
 <head>
   <title>Spotify Login</title>
-  <link rel="stylesheet" href="styles.css" /> 
+  <script src="https://cdn.tailwindcss.com"></script>
 </head>
 
-<body class="page1">
-
-  <a href="/login" class="spotify">Log in with Spotify</a>
-
-
+<body>
+  <div class="flex h-screen items-center bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-teal-400 via-amber-200 to-violet-600">
+    <div class="m-auto">
+      <div class=" flex items-center justify-center my-6">
+        <p class="text-xl font-medium mx-8">Made for</p>
+        <img src="https://spotify.everythingisart.org/static/spotifylogo.png" class="w-56" />
+      </div>
+      <img src="https://spotify.everythingisart.org/static/spotifyjourneyjamslogo.png" class="w-108 px-10"/>
+      <div class="flex justify-center my-20">
+        <a href="/login" class="rounded-full bg-green-500 p-5 px-10 text-3xl text-white">Log in with Spotify</a>
+      </div>
+    </div>
+  </div>
 </body>
+
 </html>
