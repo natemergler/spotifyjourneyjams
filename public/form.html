@@ -3,28 +3,67 @@
 <head>
   <meta charset="UTF-8">
   <title>Spotify Journey</title>
-  <link rel="stylesheet" href="styles.css">
+  <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body class="page2">
+<body>
+  <div class="flex h-screen items-center bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-teal-400 via-amber-200 to-violet-600">
+    <div class="m-auto">
+      <div class="my-6 flex items-center justify-center">
+        <p class="mx-8 text-xl font-medium">Made for</p>
+        <img src="https://spotify.everythingisart.org/static/spotifylogo.png" class="w-56" />
+      </div>
+      <img src="https://spotify.everythingisart.org/static/spotifyjourneyjamslogo.png" class="w-108 px-10" />
+      <div class="p-10 justify-center">
+        <form id="inputs" action="/submit" method="POST" class="bg-transparent p-8 rounded-3xl shadow-2xl">
+          <div class="m-3">
+            <input type="text" id="startingPoint" name="startingPoint" placeholder="Where are you? Leave blank for current location"  class="w-full rounded-full bg-white px-8 py-6 text-xl text-gray-800 focus:outline-none" />
+          </div>
 
-<div class="container">
-  <form id="inputs" action="/submit" method="POST">
-    <div class="input-container">
-        <input type="text" id="startingPoint" name="startingPoint" placeholder="Enter Starting Point" required>
-    </div>
-    
-    <div class="input-container">
-        <input type="text" id="destination" name="destination" placeholder="Enter Destination" required>
-    </div>
-    
-    <div class="input-container">
-        <input type="text" id="artist" name="artist" placeholder="Enter Artist" required>
-    </div>
-    
-    <button class="button" type="submit">Submit</button>
-</form>
+          <div class="m-3">
+            <input type="text" id="destination" name="destination" placeholder="Where are you going?" required class="w-full rounded-full bg-white px-8 py-6 text-xl text-gray-800 focus:outline-none" />
+          </div>
 
-</div>
+          <div class="m-3">
+            <input type="text" id="artist" name="artist" placeholder="Pick an artist for your trip!" required class="w-full rounded-full bg-white px-8 py-6 text-xl text-gray-800 focus:outline-none" />
+          </div>
 
+          <div class="flex justify-center mt-10">
+            <button class="rounded-full bg-green-600 p-3 px-10 text-xl text-white" type="submit">Submit</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+  <script>
+    document.getElementById('submitButton').addEventListener('click', function() {
+      // Get the input value
+      var startingPointInput = document.getElementById('startingPoint');
+      var startingPoint = startingPointInput.value.trim();
+
+      // Check if the input is empty
+      if (startingPoint === '') {
+        // Get current location
+        if (navigator.geolocation) {
+          navigator.geolocation.getCurrentPosition(
+            function(position) {
+              // Use the obtained coordinates
+              var latitude = position.coords.latitude;
+              var longitude = position.coords.longitude;
+              
+              // Do something with the coordinates (e.g., submit them)
+              console.log('Latitude:', latitude);
+              console.log('Longitude:', longitude);
+              
+              // Update the input field with the current location
+              startingPointInput.value = latitude + ',' + longitude;
+            },
+            function(error) {
+              console.error('Error getting location:', error.message);
+            }
+          );
+        } else {
+          alert('Geolocation is not supported by this browser.');
+        }
+      }
 </body>
 </html>
