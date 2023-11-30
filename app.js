@@ -273,7 +273,7 @@ app.get("/loadingdebug", async (req, res) => {
 
 // Route for displaying results
 app.get("/playlist", spotifyApiMiddleware, (req, res) => {
-  const spotifyApi = req.session.spotifyApi;
+  const spotifyApi = req.spotifyApi;
 
   try {
     // Render the EJS template with data
@@ -289,6 +289,25 @@ app.get("/playlist", spotifyApiMiddleware, (req, res) => {
     console.error(error.message);
     res.status(500).send("Error displaying results");
   }
+});
+
+app.get("/playlistdebug", (req, res) => {
+  try {
+    const filePath = path.join(__dirname, 'test.json');
+    const debugsession = require(filePath);
+  
+    res.render("playlist", {
+      artist: debugsession.startingArtist.name,
+      songs: debugsession.songs,
+      playlist: debugsession.playlist,
+      duration: debugsession.duration,
+      distance: debugsession.distance,
+    });
+  } catch (error) {
+    console.error('Error loading or parsing JSON file:', error);
+    // Handle the error, but don't send a response here
+  }
+  
 });
 
 app.get("/debug", spotifyApiMiddleware, (req, res) => {
