@@ -19,6 +19,10 @@
             <input type="text" id="startingPoint" name="startingPoint" placeholder="Where are you? Leave blank for current location"  class="w-full rounded-full bg-white px-8 py-6 text-xl text-gray-800 focus:outline-none" />
           </div>
 
+          <div class="flex justify-center mt-3">
+            <p id="swapButton" class=" text-white p-2 text-2xl rounded-md">↕</p>
+          </div>
+
           <div class="m-3">
             <input type="text" id="destination" name="destination" placeholder="Where are you going?" required class="w-full rounded-full bg-white px-8 py-6 text-xl text-gray-800 focus:outline-none" />
           </div>
@@ -34,36 +38,18 @@
       </div>
     </div>
   </div>
-  <script>
-    document.getElementById('submitButton').addEventListener('click', function() {
-      // Get the input value
-      var startingPointInput = document.getElementById('startingPoint');
-      var startingPoint = startingPointInput.value.trim();
 
-      // Check if the input is empty
-      if (startingPoint === '') {
-        // Get current location
-        if (navigator.geolocation) {
-          navigator.geolocation.getCurrentPosition(
-            function(position) {
-              // Use the obtained coordinates
-              var latitude = position.coords.latitude;
-              var longitude = position.coords.longitude;
-              
-              // Do something with the coordinates (e.g., submit them)
-              console.log('Latitude:', latitude);
-              console.log('Longitude:', longitude);
-              
-              // Update the input field with the current location
-              startingPointInput.value = latitude + ',' + longitude;
-            },
-            function(error) {
-              console.error('Error getting location:', error.message);
-            }
-          );
-        } else {
-          alert('Geolocation is not supported by this browser.');
-        }
-      }
+  <script>
+    // Swap values when the "Swap" button is clicked
+    document.getElementById('swapButton').addEventListener('click', function() {
+      var startingPointInput = document.getElementById('startingPoint');
+      var destinationInput = document.getElementById('destination');
+
+      var tempValue = startingPointInput.value;
+      startingPointInput.value = destinationInput.value;
+      destinationInput.value = tempValue;
+    });
+
+  </script>
 </body>
 </html>
