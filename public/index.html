@@ -4,19 +4,23 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Everything is Art</title>
-    <link rel="stylesheet" href="styles.css" />
+    <script src="https://cdn.tailwindcss.com"></script>
   </head>
 
   <body>
-    <div class="container">
-      <h1>everything is art</h1>
-      <p>Yes. All of it.</p>
-      <a class="spotify" href="/spotify">Spotify</a>
-      <p class="email">
-        <a href="mailto:hatemail@everythingisart.org"
-          >hatemail@everythingisart.org</a
-        >
-      </p>
+    <div class="flex h-screen items-center">
+      <div class="m-auto space-y-20 text-center">
+        <div class="text-left text-2xl">
+          <h1 class="font-bold">everything is art</h1>
+          <p class="font-thin">Yes. All of it.</p>
+        </div>
+        <button><a class="rounded-full bg-green-400 p-3 px-10 text-3xl text-white" href="/spotify">Spotify</a></button>
+        <p class="email"></p>
+        <p class="email text-left">
+          <a href="mailto:hatemail@everythingisart.org" class="text-blue-500 transition duration-300 hover:text-blue-700 hover:underline"> hatemail@everythingisart.org </a>
+        </p>
+      </div>
     </div>
   </body>
+  
 </html>
