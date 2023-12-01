@@ -146,12 +146,11 @@ app.post("/submit", spotifyApiMiddleware, async (req, res) => {
     // Store additional data in the session
     req.session.startingArtist = startingArtist;
     req.session.songs = songs;
-
     // Render the EJS template with data
     res.render("verify", {
       startingPoint: req.session.startingPointData,
       destination: req.session.destinationData,
-      artist: req.session.startingArtist.name,
+      artist: req.session.startingArtist,
       testSongs: req.session.songs,
       artistImage: req.session.startingArtist.images[0].url,
     });

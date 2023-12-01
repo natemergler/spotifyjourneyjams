@@ -42,6 +42,7 @@ async function similarArtists(spotifyApi, artistCode) {
       name: artist.name,
       genres: artist.genres,
       images: artist.images,
+      
     }));
 
     return artistList;
