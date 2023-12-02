@@ -141,7 +141,7 @@
             function (position) {
               console.log(position.coords);
               var startingPointInput = document.getElementById("startingPoint");
-              startingPointInput.value = position.coords.latitude+','+position.coords.longitude;
+              startingPointInput.value = position.coords.longitude+','+position.coords.latitude;
             },
             function (error) {
               // handle the error
