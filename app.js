@@ -140,7 +140,7 @@ app.post("/submit", spotifyApiMiddleware, async (req, res) => {
     );
 
     // Fetch additional data (if needed)
-    const startingArtist = await searchArtist(spotifyApi, artist, 0);
+    const startingArtist = await searchArtist(spotifyApi, artist);
     const songs = await topTracks(spotifyApi, startingArtist.id);
 
     // Store additional data in the session

@@ -1,7 +1,7 @@
-async function searchArtist(spotifyApi, artistInput, listNum) {
+async function searchArtist(spotifyApi, artistInput) {
   try {
     const results = await spotifyApi.searchArtists(artistInput);
-    const mainArtist = results.body.artists.items[listNum];
+    const mainArtist = results.body.artists.items[0];
     return mainArtist;
   } catch (error) {
     throw new Error(`Error getting artist info: ${error.message}`);
