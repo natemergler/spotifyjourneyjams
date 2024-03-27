@@ -33,33 +33,19 @@
           listItem.textContent = `Found songs you might like!`;
           document.getElementById('playlist').appendChild(listItem);
         }
-        if (data.madePlaylist) {
-          const pmessage = document.createElement('li');
-          pmessage.textContent = `Made and published your playlist!!`;
-          document.getElementById('playlist').appendChild(pmessage);
+        if (data.songs) {
+          const playlistElement = document.getElementById('playlist');
 
-          const script = document.createElement('script');
-          script.src = 'https://open.spotify.com/embed/iframe-api/v1';
-          script.async = true;
-          document.body.appendChild(script);
-
-          // Step 2: Create an element for the iFrame
-          const embedContainer = document.createElement('div');
-          embedContainer.id = 'embed-iframe';
-          document.getElementById('playlist').appendChild(embedContainer);
-
-          // Step 3: Define the window.onSpotifyIframeApiReady function
-          window.onSpotifyIframeApiReady = (IFrameAPI) => {
-            // Step 4: Create a controller object
-            const options = {
-              uri: data.madePlaylist // Assuming data.madePlaylist contains the Spotify playlist URI
-            };
-            const callback = (EmbedController) => {
-              // You can perform actions with the EmbedController if needed
-            };
-            IFrameAPI.createController(embedContainer, options, callback);
-          }; // Append the iframe to the playlist container
+          data.songs.forEach(song => {
+            const listItem = document.createElement('li');
+            listItem.textContent = `${song.artist.name} - ${song.track}`;
+            playlistElement.appendChild(listItem);
+          });
+          const braek = document.createElement('h3');
+          braek.textContent = "!!!! new Playlists"
+          playlistElement.appendChild(braek)
         }
+
 
       } catch (error) {
         console.error('Error parsing JSON:', error);
