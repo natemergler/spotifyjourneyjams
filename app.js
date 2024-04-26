@@ -46,9 +46,9 @@ app.set("views", path.join(__dirname, "views"));
 app.use(cookieParser());
 
 app.use((req, res, next) => {
-  res.setHeader('Cache-Control', 'no-cache, no-store');
-  res.setHeader('Pragma', 'no-cache');
-  res.setHeader('Expires', '0');
+  res.setHeader("Cache-Control", "no-cache, no-store");
+  res.setHeader("Pragma", "no-cache");
+  res.setHeader("Expires", "0");
   next();
 });
 const sessionMiddleware = session({
@@ -141,11 +141,11 @@ app.post("/geocoding", async (req, res) => {
   try {
     req.session.startingPointData = await geocode(
       startingPoint,
-      MAPBOX_ACCESS_TOKEN
+      MAPBOX_ACCESS_TOKEN,
     );
     req.session.destinationData = await geocode(
       destination,
-      MAPBOX_ACCESS_TOKEN
+      MAPBOX_ACCESS_TOKEN,
     );
   } catch (error) {
     console.error("Error geocoding \n", error.message);
@@ -158,7 +158,7 @@ app.post("/geocoding", async (req, res) => {
     var { duration, distance, errorMessage } = await drivingTraffic(
       req.session.startingPointData.coordinates,
       req.session.destinationData.coordinates,
-      MAPBOX_ACCESS_TOKEN
+      MAPBOX_ACCESS_TOKEN,
     );
 
     req.session.duration = duration;
@@ -268,70 +268,74 @@ app.get("/loading", spotifyApiMiddleware, async (req, res) => {
 app.get("/stream", spotifyApiMiddleware, async (req, res) => {
   const spotifyApi = req.spotifyApi;
   const duration = req.session.duration;
-  res.writeHead(200, {
-    Connection: "keep-alive",
-    "Cache-Control": "no-cache",
-    "Content-Type": "text/event-stream",
-  });
+  const creativityLookupTable = {
+    // whether or not to use top tracks, how many similar artists, and recommended limit
+    1: [true, 0, 0],
+    2: [true, 2, 0],
+    3: [true, 4, 0],
+    4: [true, 6, 0],
+    5: [true, 10, 0],
+    6: [true, 10, 25],
+    7: [true, 10, 50],
+    8: [false, 4, 100],
+    9: [false, 0, 100],
+    10: [false, 0, 10],
+  };
 
-  if (!req.session.startRecommend) {
-    req.session.startRecommend = true;
-    try {
-      console.log("Getting  song list");
-      const initialSongList = await collectSongList(
-        spotifyApi,
-        req.session.creativityParameters,
-        req.session.selection,
-        req.session.searchType,
-        duration
-      );
-      const pickedSongs = await pickSongs(duration, initialSongList);
-      req.session.songList = pickedSongs;
-      const chunk = JSON.stringify({ foundSongs: true });
-      res.write(`data: ${chunk}\n\n`);
-    } catch (error) {
-      console.log("Issue getting recommendations: \n", error);
-      res.status(500);
+  for (let i = 1; i < 11; i++) {
+    for (let q = 0; q < 3; q++) {
+      if (!req.session.startRecommend) {
+        req.session.startRecommend = true;
+        try {
+          console.log("Getting song list");
+          const initialSongList = await collectSongList(
+            spotifyApi,
+            creativityLookupTable[i],
+            req.session.selection,
+            req.session.searchType,
+            duration,
+          );
+          const pickedSongs = await pickSongs(duration, initialSongList);
+          req.session.songList = pickedSongs;
+        } catch (error) {
+          console.log("Issue getting recommendations: \n", error);
+        } finally {
+          req.session.startRecommend = false;
+        }
+      }
+
+      if (!req.session.startPlaylist) {
+        try {
+          const trackIds = req.session.songList.map(
+            (track) => "spotify:track:" + track.id,
+          );
+          console.log(trackIds);
+          // Create playlist
+          const playlistName = "2RRRRoad Trip! - " + i.toString();
+          const playlistDescription = "Made with love on Spotify Journey";
+
+          // Get the current user's ID
+          const userId = await spotifyApi.getMe();
+
+          // Create the playlist
+          var roadTripPlaylist = await spotifyApi.createPlaylist(playlistName, {
+            description: playlistDescription,
+          });
+
+          // Get the URI of the created playlist
+          var playlistUri = roadTripPlaylist.body.id;
+          req.session.playlist = roadTripPlaylist;
+          await addToPlaylist(spotifyApi, trackIds, playlistUri);
+          console.log("finished making playlist");
+        } catch (error) {
+          console.error("Error creating playlist:", error.message);
+          // Handle the error as needed
+        } finally {
+          req.session.startPlaylist = false;
+        }
+      }
     }
   }
-
- 
-  if (!req.session.startPlaylist) {
-    try {
-      const trackIds = req.session.songList.map(
-        (track) => "spotify:track:" + track.id
-      );
-      console.log(trackIds);
-      // Create playlist
-      const playlistName = "Road Trip!";
-      const playlistDescription = "Made with love on Spotify Journey";
-
-      // Get the current user's ID
-      const userId = await spotifyApi.getMe();
-
-      // Create the playlist
-      var roadTripPlaylist = await spotifyApi.createPlaylist(playlistName, {
-        description: playlistDescription,
-      });
-
-      // Get the URI of the created playlist
-      var playlistUri = roadTripPlaylist.body.id;
-      req.session.playlist = roadTripPlaylist;
-      req.session.startPlaylist = true;
-      await addToPlaylist(spotifyApi, trackIds, playlistUri);
-      req.session.playlistComplete = true;
-      console.log("finished making playlist")
-      const chunk = JSON.stringify({ madePlaylist: roadTripPlaylist.body.uri });
-      res.write(`data: ${chunk}\n\n`);
-      res.end();
-    } catch (error) {
-      console.error("Error creating playlist:", error.message);
-      // Handle the error as needed
-    }
-  }
-  res.on("close", () => {
-    res.end();
-  });
 });
 
 app.get("/results", spotifyApiMiddleware, async (req, res) => {
